@@ -1,6 +1,5 @@
 package xyz.scootaloo.vertlin.boot.internal
 
-import xyz.scootaloo.vertlin.boot.InjectableService
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import kotlin.reflect.KClass
 
@@ -9,7 +8,7 @@ import kotlin.reflect.KClass
  * @since 2022/7/17 下午11:59
  */
 
-fun <T : InjectableService> inject(s: KClass<T>): Lazy<T> {
+fun <T : Any> inject(s: KClass<T>): Lazy<T> {
     return ServiceInjector(s)
 }
 
@@ -18,7 +17,7 @@ fun <T : InjectableService> inject(s: KClass<T>): Lazy<T> {
  * 由于这里是从线程安全的容器里获取对象, 且容器里保存的对象永远不会被覆盖,
  * 所有可以保证在不加锁的情况下每次调用都返回同一个实例, 而不会额外创建
  */
-private class ServiceInjector<T : InjectableService>(
+private class ServiceInjector<T : Any>(
     val klass: KClass<*>
 ) : Lazy<T> {
 

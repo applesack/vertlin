@@ -1,81 +1,99 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
-import net.sf.cglib.proxy.Enhancer
-import xyz.scootaloo.vertlin.boot.EventbusApi
-import xyz.scootaloo.vertlin.boot.eventbus.impl.EventbusApiInvokeInterceptor
-import xyz.scootaloo.vertlin.boot.eventbus.impl.EventbusConsumerImpl
-import xyz.scootaloo.vertlin.boot.exception.AbstractMethodException
-import xyz.scootaloo.vertlin.boot.exception.CreateSubclassException
-import xyz.scootaloo.vertlin.boot.exception.NotSuspendMethodException
+import io.vertx.core.Vertx
+import xyz.scootaloo.vertlin.boot.core.ifNotNull
+import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
-import xyz.scootaloo.vertlin.boot.resolver.Factory
+import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
+import xyz.scootaloo.vertlin.boot.resolver.ServiceReducer
 import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import kotlin.random.Random
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.full.declaredMemberFunctions
-import xyz.scootaloo.vertlin.boot.util.Json2Kotlin as AsyncCaller
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.javaField
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/7/17 下午8:37
  */
-object EventbusApiResolver : ServiceResolver() {
+object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
 
     override fun acceptType(): KClass<*> {
         return EventbusApi::class
     }
 
-    override fun solve(type: KClass<*>): ContextServiceManifest {
+    override fun solve(type: KClass<*>, manager: ServiceManager) {
         val context = solveContext(type)
         val addressPrefix = eventbusServiceAddressPrefix(type)
         val instance = TypeUtils.createInstanceByNonArgsConstructor(type)
-        val enhanced = enhanceTargetType(type, addressPrefix)
 
         val manifest = EventbusApiManifest(context)
-        for (method in instance::class.declaredMemberFunctions) {
-            checkMethodFormat(type, method)
-            val qualifiedAddress = AsyncCaller.qualifiedAddressByMethod(addressPrefix, method)
-            manifest.consumers.add(
-                EventbusConsumerImpl(context, instance, qualifiedAddress, method)
-            )
-        }
-
-        return object : ContextServiceManifest by manifest, Factory {
-            override fun instanceType(): KClass<*> {
-                return type
+        for (property in instance::class.declaredMemberProperties) {
+            if (!property.javaField!!.type.kotlin.isSubclassOf(EventbusApiBuilder::class)) {
+                continue
             }
 
-            override fun getObject(): Any {
-                return enhanced
+            property.isAccessible = true
+            val builder = property.call(instance) as EventbusApiBuilder<*>
+            val qualifiedAddress = qualifiedAddressByProperty(addressPrefix, property)
+
+            builder.address = qualifiedAddress
+            manifest.consumers.add(builder)
+
+            builder.codec.ifNotNull {
+                manager.registerManifest(it)
             }
         }
+
+        manager.publishSingleton(instance)
+        manager.registerManifest(manifest)
     }
 
-    private fun enhanceTargetType(target: KClass<*>, addressPrefix: String): Any {
-        val enhancer = Enhancer()
-        enhancer.setSuperclass(target.java)
-        enhancer.setCallback(EventbusApiInvokeInterceptor(addressPrefix))
-        return kotlin.runCatching {
-            enhancer.create()
-        }.getOrElse {
-            throw CreateSubclassException(target, it)
-        }
+    override fun acceptSourceType(): KClass<JsonCodec<*>> {
+        return JsonCodec::class
     }
 
-    private fun checkMethodFormat(type: KClass<*>, method: KFunction<*>) {
-        if (!method.isSuspend) {
-            throw NotSuspendMethodException(type, method)
+    override fun reduce(services: MutableList<ContextServiceManifest>): ContextServiceManifest {
+        val codecs = services.map {
+            @Suppress("UNCHECKED_CAST")
+            it as JsonCodec<Any>
         }
-        if (method.isAbstract) {
-            throw AbstractMethodException(type, method)
-        }
+        return EventbusCodecManifest(codecs)
+    }
+
+    private fun qualifiedAddressByProperty(prefix: String, prop: KProperty1<*, *>): String {
+        return "$prefix:${prop.name}"
     }
 
     private fun eventbusServiceAddressPrefix(klass: KClass<*>): String {
         val simpleName = klass.simpleName ?: "unknown${Random.nextInt(300)}"
         return "api:$simpleName"
+    }
+
+    private class EventbusCodecManifest(
+        private val codecs: List<JsonCodec<Any>>
+    ) : ContextServiceManifest {
+
+        override fun name(): String {
+            return "eventbus-codec"
+        }
+
+        override fun context(): String {
+            return Constant.SYSTEM
+        }
+
+        override suspend fun register(vertx: Vertx) {
+            val eventbus = vertx.eventBus()
+            for (codec in codecs) {
+                val msgCodec = codec.toMessageCodec()
+                eventbus.registerDefaultCodec(codec.type.java, msgCodec)
+            }
+        }
+
     }
 
 }

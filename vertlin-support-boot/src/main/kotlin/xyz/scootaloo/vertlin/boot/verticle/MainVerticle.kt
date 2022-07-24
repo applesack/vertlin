@@ -1,9 +1,6 @@
 package xyz.scootaloo.vertlin.boot.verticle
 
-import io.vertx.core.CompositeFuture
-import io.vertx.core.Promise
 import io.vertx.kotlin.coroutines.await
-import kotlinx.coroutines.launch
 import xyz.scootaloo.vertlin.boot.core.Helper
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest

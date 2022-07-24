@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
-import kotlin.reflect.KClass
 
 /**
  * 资源管理
@@ -63,11 +62,15 @@ internal object Container {
 
     internal fun registerVertx(vertx: Vertx) {
         this.vertx = vertx
+        registerObject(vertx)
+        registerObject(vertx.eventBus())
+        registerObject(vertx.fileSystem())
     }
 
-    internal fun registerObject(type: KClass<*>, obj: Any) {
+    internal fun registerObject(obj: Any) {
+        val typeQName = TypeUtils.solveQualifiedName(obj::class)
         singletonLock.write {
-            singletons[TypeUtils.solveQualifiedName(type)] = obj
+            singletons[typeQName] = obj
         }
     }
 

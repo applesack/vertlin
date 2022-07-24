@@ -15,7 +15,7 @@ abstract class ServiceResolver {
     abstract fun acceptType(): KClass<*>
 
     @Throws(Throwable::class, NotSuspendMethodException::class)
-    abstract fun solve(type: KClass<*>): ContextServiceManifest
+    abstract fun solve(type: KClass<*>, manager: ServiceManager)
 
     protected fun solveContext(klass: KClass<*>): String {
         return klass.findAnnotations(Context::class)
