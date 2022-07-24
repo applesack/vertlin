@@ -1,7 +1,7 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.Vertx
-import xyz.scootaloo.vertlin.boot.core.ifNotNull
+import io.vertx.core.eventbus.EventBus
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
@@ -17,6 +17,12 @@ import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 
 /**
+ * ## 系统服务 [EventbusApi] 的专用解析器
+ *
+ * 将继承于[EventbusApi]的类中所有通过[EventbusApi.api]接口创建出来的属性注册成[EventBus]的消费者;
+ *
+ * 同时将api接口提供的解码器注册到系统中
+ *
  * @author flutterdash@qq.com
  * @since 2022/7/17 下午8:37
  */
@@ -33,19 +39,27 @@ object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
 
         val manifest = EventbusApiManifest(context)
         for (property in instance::class.declaredMemberProperties) {
-            if (!property.javaField!!.type.kotlin.isSubclassOf(EventbusApiBuilder::class)) {
+            val fieldType = property.javaField!!.type.kotlin
+
+            if (fieldType.isSubclassOf(EventbusApiBuilder::class)) {
+                property.isAccessible = true
+                val builder = property.call(instance) as EventbusApiBuilder<*>
+                val qualifiedAddress = qualifiedAddressByProperty(addressPrefix, property)
+
+                builder.address = qualifiedAddress
+                manifest.consumers.add(builder)
                 continue
             }
 
-            property.isAccessible = true
-            val builder = property.call(instance) as EventbusApiBuilder<*>
-            val qualifiedAddress = qualifiedAddressByProperty(addressPrefix, property)
-
-            builder.address = qualifiedAddress
-            manifest.consumers.add(builder)
-
-            builder.codec.ifNotNull {
-                manager.registerManifest(it)
+            if (instance is EventbusDecoder) {
+                val builder = EventbusDecoderBuilder()
+                instance.decoders(builder)
+                for (codec in builder.decoders) {
+                    // 当有多个属性都引用了同一个类型的解码器, 则会导致重复注册
+                    // 当出现重复注册问题时, 只有最早注册的解码器会生效, 而后续注册的解码器会当作异常抛出
+                    // 所以本解析器实现了ServiceReducer接口, 可以将多余的类型解码器约简, 消除重复注册的异常
+                    manager.registerManifest(codec)
+                }
             }
         }
 
@@ -87,8 +101,11 @@ object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
         }
 
         override suspend fun register(vertx: Vertx) {
+            val noDuplicateCodecs = codecs.associateBy {
+                TypeUtils.solveQualifiedName(it.type)
+            }.values
             val eventbus = vertx.eventBus()
-            for (codec in codecs) {
+            for (codec in noDuplicateCodecs) {
                 val msgCodec = codec.toMessageCodec()
                 eventbus.registerDefaultCodec(codec.type.java, msgCodec)
             }

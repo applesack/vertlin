@@ -1,8 +1,7 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
-import io.vertx.core.json.JsonObject
+import io.vertx.core.eventbus.EventBus
 import xyz.scootaloo.vertlin.boot.InjectableService
-import kotlin.reflect.KClass
 
 /**
  * @author flutterdash@qq.com
@@ -10,22 +9,21 @@ import kotlin.reflect.KClass
  */
 abstract class EventbusApi : InjectableService {
 
+    /**
+     * 创建一个[EventBus]的消费端
+     *
+     * 需要注意的一点就是[consumer]这个回调的返回值, 从回调中返回值然后传递到接收者, 会经过序列化和反序列化的处理;
+     * 序列化操作默认会将返回值转化为JsonObject(基础类型除外), 然后由对应的泛序列化器将JsonObject转化成目标类型;
+     *
+     * 系统默认只包含基础类型的反序列化器:
+     * `null`, `boolean`, `byte`, `short`, `int`, `float`, `double`,
+     * `long`, `String`, `JsonObject`, `JsonArray`,
+     * 如果你的回调的返回值不属于以上11种之一, 则需要考虑实现[EventbusDecoder]接口, 并注册对应类型的反序列化器
+     */
     protected fun <T : Any> api(
         consumer: EventbusConsumer<T>
     ): EventbusApiBuilder<T> {
-        return EventbusApiBuilder(null, consumer)
-    }
-
-    protected fun <T : Any> api(
-        codec: JsonCodec<T>, consumer: EventbusConsumer<T>
-    ): EventbusApiBuilder<T> {
-        return EventbusApiBuilder(codec, consumer)
-    }
-
-    protected fun <T : Any> codec(
-        type: KClass<T>, convert: (JsonObject) -> T
-    ): JsonCodec<T> {
-        return JsonCodec(type, convert)
+        return EventbusApiBuilder(consumer)
     }
 
 }

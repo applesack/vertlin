@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.reflect.KClass
 
 /**
  * 资源管理
@@ -29,10 +30,11 @@ internal object Container {
     private val contextLock = ReentrantReadWriteLock()
     private val contextMapper = ConcurrentHashMap<String, String>()
 
-    fun getObjectByQualifiedName(qName: String): Any? {
+    fun getObject(type: KClass<*>): Any? {
         checkState()
+        val typeQName = TypeUtils.solveQualifiedName(type)
         return singletonLock.read {
-            singletons[qName]
+            singletons[typeQName]
         }
     }
 
@@ -41,11 +43,6 @@ internal object Container {
         return resourcesLock.read {
             coroutineRes[context]!!
         }
-    }
-
-    fun getVertx(): Vertx {
-        checkState()
-        return vertx
     }
 
     internal fun start() {

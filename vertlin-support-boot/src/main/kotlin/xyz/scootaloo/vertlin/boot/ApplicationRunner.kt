@@ -142,10 +142,16 @@ object ApplicationRunner : Helper {
 
     private fun failure(error: Throwable) {
         log.error("启动失败", error)
+        Container.failure()
+        clearCache()
     }
 
     private fun finish() {
         Container.finish()
+        clearCache()
+    }
+
+    private fun clearCache() {
         manager.clearCache()
         resolvers.clear()
         manifests.clear()

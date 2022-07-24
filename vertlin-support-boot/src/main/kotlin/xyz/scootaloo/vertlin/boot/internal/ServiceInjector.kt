@@ -1,6 +1,5 @@
 package xyz.scootaloo.vertlin.boot.internal
 
-import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import kotlin.reflect.KClass
 
 /**
@@ -47,7 +46,7 @@ private class ServiceInjector<T : Any>(
     companion object {
 
         private fun getObject(type: KClass<*>): Any {
-            return Container.getObjectByQualifiedName(TypeUtils.solveQualifiedName(type))!!
+            return Container.getObject(type)!!
         }
 
     }

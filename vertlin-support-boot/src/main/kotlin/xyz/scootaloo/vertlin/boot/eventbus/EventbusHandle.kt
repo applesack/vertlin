@@ -10,8 +10,14 @@ import io.vertx.kotlin.core.json.jsonObjectOf
  */
 interface EventbusHandle<T> {
 
-    suspend operator fun invoke(json: JsonObject = jsonObjectOf()): T
+    /**
+     * 括号操作符的重载, 通过括号表达式直接获取一个异步调用的返回值
+     */
+    suspend operator fun invoke(params: JsonObject = jsonObjectOf()): T
 
-    suspend fun request(json: JsonObject = jsonObjectOf()): Message<T>
+    /**
+     * 获取异步调用的结果
+     */
+    suspend fun request(params: JsonObject = jsonObjectOf()): Message<T>
 
 }

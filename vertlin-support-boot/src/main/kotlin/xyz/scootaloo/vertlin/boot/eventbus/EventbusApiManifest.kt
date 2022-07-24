@@ -15,6 +15,7 @@ class EventbusApiManifest(
 ) : ContextServiceManifest {
 
     private val coroutine by inject(context)
+
     override fun name(): String {
         return "eventbus"
     }

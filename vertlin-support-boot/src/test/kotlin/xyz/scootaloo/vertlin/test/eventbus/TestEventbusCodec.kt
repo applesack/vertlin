@@ -9,6 +9,8 @@ import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.core.Helper
 import xyz.scootaloo.vertlin.boot.core.TestDSL
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
+import xyz.scootaloo.vertlin.boot.eventbus.EventbusDecoder
+import xyz.scootaloo.vertlin.boot.eventbus.EventbusDecoderBuilder
 import xyz.scootaloo.vertlin.boot.internal.inject
 import kotlin.reflect.KClass
 import kotlin.system.measureTimeMillis
@@ -27,6 +29,8 @@ class TestEventbusCodec : BootManifest, TestDSL {
             runApplication(arrayOf()).await()
         }.log()
         testCodec.hello().log()
+        testCodec.hello2().log()
+        testCodec.hello3().log()
     }
 
     override fun services(): Collection<KClass<out Service>> {
@@ -36,18 +40,26 @@ class TestEventbusCodec : BootManifest, TestDSL {
 }
 
 @Context("test")
-class TestCodec : EventbusApi(), Helper {
+class TestCodec : EventbusApi(), EventbusDecoder, Helper {
 
-    private val log = getLogger()
-
-    private val pair = codec(Pair::class) {
-        val first = it.getString("first")
-        val second = it.getString("second")
-        Pair(first, second)
+    val hello = api {
+        Pair("abc", "456")
     }
 
-    val hello = api(pair) {
-        Pair("abc", "456")
+    val hello2 = api {
+        Pair("cdf", "123")
+    }
+
+    val hello3 = api {
+        Pair("xyz", "789")
+    }
+
+    override fun decoders(builder: EventbusDecoderBuilder) {
+        builder.codec(Pair::class) {
+            val first = it.getString("first")
+            val second = it.getString("second")
+            Pair(first, second)
+        }
     }
 
 }
