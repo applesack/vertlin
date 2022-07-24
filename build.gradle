@@ -69,9 +69,9 @@ subprojects {
         def kotlinVersion = property("kotlin_version")
         def kotlinxVersion = property("kotlinx_version")
 
-        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-        implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
+        api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+        api "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        api "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
 
         testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.0"

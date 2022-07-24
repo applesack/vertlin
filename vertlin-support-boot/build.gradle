@@ -1,0 +1,18 @@
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    def vertxVersion = rootProject.property("vertx_version")
+
+    api "io.vertx:vertx-core:$vertxVersion"
+    api "io.vertx:vertx-lang-kotlin:$vertxVersion"
+    api "io.vertx:vertx-lang-kotlin-coroutines:$vertxVersion"
+
+    implementation "cglib:cglib:3.3.0"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.3"
+
+    implementation 'ch.qos.logback:logback-classic:1.2.11'
+}
