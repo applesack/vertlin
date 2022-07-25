@@ -7,6 +7,7 @@ import xyz.scootaloo.vertlin.boot.Closeable
 import xyz.scootaloo.vertlin.boot.ServiceLifeCycle
 import xyz.scootaloo.vertlin.boot.exception.DeployServiceException
 import xyz.scootaloo.vertlin.boot.internal.Container
+import xyz.scootaloo.vertlin.boot.internal.CoroutineResource
 import xyz.scootaloo.vertlin.boot.internal.impl.CoroutineResourceImpl
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 
@@ -19,9 +20,9 @@ abstract class BaseVerticle : CoroutineVerticle() {
     protected val serviceLifeCycleAddress = "sys:cyl:init"
 
     protected fun registerResources(contextName: String) {
-        Container.registerContextMapper(Thread.currentThread().name, contextName)
-        Container.registerCoroutineEntrance(
-            contextName, CoroutineResourceImpl(this)
+        Container.registerContextMapper(contextName)
+        Container.registerContextSingleton(
+            CoroutineResourceImpl(this), contextName, CoroutineResource::class
         )
     }
 

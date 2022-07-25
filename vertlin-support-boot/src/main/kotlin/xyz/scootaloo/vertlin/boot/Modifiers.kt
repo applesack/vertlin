@@ -19,4 +19,10 @@ object Ordered {
 
     const val HIGHEST = 0
 
+    fun suitable(order: Int): Int {
+        if (order > HIGHEST) return HIGHEST
+        if (order < LOWEST) return LOWEST
+        return order
+    }
+
 }

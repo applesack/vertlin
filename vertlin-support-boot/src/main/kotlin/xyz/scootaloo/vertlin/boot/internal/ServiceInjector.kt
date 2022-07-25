@@ -1,6 +1,8 @@
 package xyz.scootaloo.vertlin.boot.internal
 
+import xyz.scootaloo.vertlin.boot.ContextOnly
 import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 /**
  * @author flutterdash@qq.com
@@ -46,7 +48,15 @@ private class ServiceInjector<T : Any>(
     companion object {
 
         private fun getObject(type: KClass<*>): Any {
+            if (type.isSubclassOf(ContextOnly::class)) {
+                return getContextObject(type)
+            }
+
             return Container.getObject(type)!!
+        }
+
+        private fun getContextObject(type: KClass<*>): Any {
+            return Container.getContextObject(type)!!
         }
 
     }

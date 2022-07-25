@@ -7,9 +7,6 @@ package xyz.scootaloo.vertlin.boot
 interface Service
 
 
-interface Resource : Service
-
-
 interface InjectableService : Service
 
 interface Closeable {
@@ -24,3 +21,6 @@ interface ServiceLifeCycle : Closeable {
     suspend fun initialize() {}
 
 }
+
+
+interface ContextOnly

@@ -3,6 +3,7 @@ package xyz.scootaloo.vertlin.boot.verticle
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.Helper
 import xyz.scootaloo.vertlin.boot.internal.Constant
+import xyz.scootaloo.vertlin.boot.internal.Container
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 
 /**
@@ -66,7 +67,7 @@ class MainVerticle(
     }
 
     private fun makeServerAsFinished() {
-
+        Container.finish()
     }
 
     private fun publishInitEvent() {

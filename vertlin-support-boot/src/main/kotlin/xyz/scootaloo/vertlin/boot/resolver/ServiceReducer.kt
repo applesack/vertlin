@@ -10,7 +10,9 @@ interface ServiceReducer<T : ContextServiceManifest> {
 
     fun acceptSourceType(): KClass<T>
 
-    fun reduce(services: MutableList<ContextServiceManifest>): ContextServiceManifest
+    fun reduce(
+        services: MutableList<ContextServiceManifest>, manager: ServiceManager
+    )
 
     fun transfer(services: MutableList<ContextServiceManifest>): Collection<T> {
         @Suppress("UNCHECKED_CAST")

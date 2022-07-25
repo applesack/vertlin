@@ -1,6 +1,8 @@
 package xyz.scootaloo.vertlin.boot.internal
 
 import io.vertx.core.Vertx
+import io.vertx.core.eventbus.EventBus
+import io.vertx.core.file.FileSystem
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -24,11 +26,11 @@ internal object Container {
     private val singletonLock = ReentrantReadWriteLock()
     private val singletons = ConcurrentHashMap<String, Any>()
 
-    private val resourcesLock = ReentrantReadWriteLock()
-    private val coroutineRes = ConcurrentHashMap<String, CoroutineResource>()
-
     private val contextLock = ReentrantReadWriteLock()
     private val contextMapper = ConcurrentHashMap<String, String>()
+
+    private val contextSingletonsLock = ReentrantReadWriteLock()
+    private val contextSingletons = ConcurrentHashMap<String, HashMap<String, Any>>()
 
     fun getObject(type: KClass<*>): Any? {
         checkState()
@@ -38,10 +40,17 @@ internal object Container {
         }
     }
 
-    fun getCoroutineRes(context: String): CoroutineResource {
+    fun getContextObject(type: KClass<*>): Any? {
         checkState()
-        return resourcesLock.read {
-            coroutineRes[context]!!
+        val threadName = realThreadName()
+        val contextName = contextLock.read {
+            contextMapper[threadName]
+        } ?: return null
+
+        val typeQName = TypeUtils.solveQualifiedName(type)
+        return contextSingletonsLock.read ret@{
+            val mapper = contextSingletons[contextName] ?: return@ret null
+            return mapper[typeQName]
         }
     }
 
@@ -59,28 +68,43 @@ internal object Container {
 
     internal fun registerVertx(vertx: Vertx) {
         this.vertx = vertx
-        registerObject(vertx)
-        registerObject(vertx.eventBus())
-        registerObject(vertx.fileSystem())
+        registerSingleton(vertx, Vertx::class)
+        registerSingleton(vertx.eventBus(), EventBus::class)
+        registerSingleton(vertx.fileSystem(), FileSystem::class)
     }
 
-    internal fun registerObject(obj: Any) {
-        val typeQName = TypeUtils.solveQualifiedName(obj::class)
+    internal fun registerSingleton(obj: Any, type: KClass<*> = obj::class) {
+        val typeQName = TypeUtils.solveQualifiedName(type)
         singletonLock.write {
             singletons[typeQName] = obj
         }
     }
 
-    internal fun registerCoroutineEntrance(context: String, res: CoroutineResource) {
-        resourcesLock.write {
-            coroutineRes[context] = res
+    internal fun registerContextSingleton(
+        obj: Any, context: String, type: KClass<out Any> = obj::class
+    ) {
+        val typeQName = TypeUtils.solveQualifiedName(type)
+        contextSingletonsLock.write {
+            val mapper = contextSingletons[context] ?: HashMap()
+            contextSingletons[context] = mapper
+            mapper[typeQName] = obj
         }
     }
 
-    internal fun registerContextMapper(threadName: String, contextName: String) {
+    internal fun registerContextMapper(contextName: String) {
+        val threadName = realThreadName()
         contextLock.write {
             contextMapper[threadName] = contextName
         }
+    }
+
+    private fun realThreadName(): String {
+        val threadName = Thread.currentThread().name
+        val idx = threadName.indexOf(' ')
+        if (idx > 0) {
+            return threadName.substring(0, idx)
+        }
+        return threadName
     }
 
     private fun checkState(targetState: StartupState = StartupState.FINISHED) {

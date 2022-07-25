@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.Vertx
+import xyz.scootaloo.vertlin.boot.internal.CoroutineResource
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import java.util.LinkedList
@@ -14,7 +15,7 @@ class EventbusApiManifest(
     internal val consumers: MutableList<EventbusApiBuilder<*>> = LinkedList()
 ) : ContextServiceManifest {
 
-    private val coroutine by inject(context)
+    private val coroutine by inject(CoroutineResource::class)
 
     override fun name(): String {
         return "eventbus"

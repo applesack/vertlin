@@ -26,7 +26,7 @@ import kotlin.reflect.jvm.javaField
  * @author flutterdash@qq.com
  * @since 2022/7/17 下午8:37
  */
-object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
+object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<Any>> {
 
     override fun acceptType(): KClass<*> {
         return EventbusApi::class
@@ -67,16 +67,14 @@ object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
         manager.registerManifest(manifest)
     }
 
-    override fun acceptSourceType(): KClass<JsonCodec<*>> {
-        return JsonCodec::class
+    override fun acceptSourceType(): KClass<JsonCodec<Any>> {
+        @Suppress("UNCHECKED_CAST")
+        return JsonCodec::class as KClass<JsonCodec<Any>>
     }
 
-    override fun reduce(services: MutableList<ContextServiceManifest>): ContextServiceManifest {
-        val codecs = services.map {
-            @Suppress("UNCHECKED_CAST")
-            it as JsonCodec<Any>
-        }
-        return EventbusCodecManifest(codecs)
+    override fun reduce(services: MutableList<ContextServiceManifest>, manager: ServiceManager) {
+        val codecs = transfer(services)
+        manager.registerManifest(EventbusCodecManifest(codecs))
     }
 
     private fun qualifiedAddressByProperty(prefix: String, prop: KProperty1<*, *>): String {
@@ -89,7 +87,7 @@ object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<*>> {
     }
 
     private class EventbusCodecManifest(
-        private val codecs: List<JsonCodec<Any>>
+        private val codecs: Collection<JsonCodec<Any>>
     ) : ContextServiceManifest {
 
         override fun name(): String {

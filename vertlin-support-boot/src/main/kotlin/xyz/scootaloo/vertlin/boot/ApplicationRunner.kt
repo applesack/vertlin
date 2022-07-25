@@ -147,7 +147,7 @@ object ApplicationRunner : Helper {
     }
 
     private fun finish() {
-        Container.finish()
+        // 在 [MainVerticle] 中, 已经标记了容器的完成状态
         clearCache()
     }
 
