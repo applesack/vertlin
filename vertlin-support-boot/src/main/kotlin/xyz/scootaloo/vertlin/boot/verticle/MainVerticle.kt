@@ -25,11 +25,12 @@ class MainVerticle(
         val result = runCatching {
             registerServices(contextName, systemManifest)
             deployTemplateVerticle()
+            listeningLifeCycleEvents(log, systemManifest)
         }
 
         if (result.isSuccess) {
             makeServerAsFinished()
-            publishInitEvent()
+            publishSystemStartEvent()
         } else {
             result.getOrThrow()
         }
@@ -68,10 +69,6 @@ class MainVerticle(
 
     private fun makeServerAsFinished() {
         Container.finish()
-    }
-
-    private fun publishInitEvent() {
-        vertx.eventBus().publish(serviceLifeCycleAddress, "")
     }
 
     private fun shutdown() {

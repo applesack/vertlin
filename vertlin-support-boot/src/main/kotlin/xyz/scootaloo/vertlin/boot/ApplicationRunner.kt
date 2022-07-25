@@ -3,6 +3,9 @@ package xyz.scootaloo.vertlin.boot
 import io.vertx.core.Future
 import io.vertx.core.Vertx
 import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.crontab.Crontab
+import xyz.scootaloo.vertlin.boot.crontab.CrontabAdapter
+import xyz.scootaloo.vertlin.boot.crontab.CrontabResolver
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApiResolver
 import xyz.scootaloo.vertlin.boot.exception.InheritanceRelationshipException
@@ -74,6 +77,10 @@ object ApplicationRunner : Helper {
         if (TypeUtils.solveQualifiedName(EventbusApi::class) !in this.resolvers) {
             this.resolvers[TypeUtils.solveQualifiedName(EventbusApi::class)] = EventbusApiResolver
         }
+        if (TypeUtils.solveQualifiedName(Crontab::class) !in this.resolvers) {
+            this.resolvers[TypeUtils.solveQualifiedName(CrontabAdapter::class)] = CrontabResolver
+            this.resolvers[TypeUtils.solveQualifiedName(Crontab::class)] = CrontabResolver
+        }
     }
 
     private fun checkTypeOfResolverAccepts(type: KClass<*>) {
@@ -83,8 +90,6 @@ object ApplicationRunner : Helper {
     }
 
     private fun loadServices(services: Collection<KClass<out Service>>) {
-        val reducers = resolvers.values.filterIsInstance<ServiceReducer<*>>()
-
         for (service in services) {
             var solved = false
             for (superType in service.supertypes) {
@@ -99,7 +104,7 @@ object ApplicationRunner : Helper {
             }
             if (!solved) {
                 log.warn(
-                    """\n
+                    """${'\n'}
                     服务启动警告: 未在配置中找到能够处理类型为'$service'的处理器,
                     所以该类型为无效服务, 不会被载入到系统; 如果要解决这个异常,
                     请考虑实现xyz.scootaloo.vertlin.boot.resolver.ServiceResolver,
@@ -109,6 +114,7 @@ object ApplicationRunner : Helper {
             }
         }
 
+        val reducers = resolvers.values.filterIsInstance<ServiceReducer<*>>()
         for (reducer in reducers) {
             manager.reduce(reducer)
         }
@@ -121,6 +127,8 @@ object ApplicationRunner : Helper {
         val contexts = manifests.groupBy { it.context() }.toMutableMap()
         val sysServices = contexts.remove(Constant.SYSTEM) ?: emptyList()
         sortServicesByPriority(contexts)
+
+        // 将代码的执行权移交给MainVerticle
 
         val vertx = createVertxInstance()
         val main = MainVerticle(sysServices, contexts)

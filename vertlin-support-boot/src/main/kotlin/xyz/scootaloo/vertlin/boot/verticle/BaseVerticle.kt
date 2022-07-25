@@ -17,7 +17,7 @@ import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
  */
 abstract class BaseVerticle : CoroutineVerticle() {
 
-    protected val serviceLifeCycleAddress = "sys:cyl:init"
+    private val serviceLifeCycleAddress = "sys:lifecycle"
 
     protected fun registerResources(contextName: String) {
         Container.registerContextMapper(contextName)
@@ -40,10 +40,16 @@ abstract class BaseVerticle : CoroutineVerticle() {
 
     protected fun listeningLifeCycleEvents(log: Logger, manifests: Collection<ContextServiceManifest>) {
         vertx.eventBus().consumer<String>(serviceLifeCycleAddress) {
-            launch {
-                initializeServices(log, manifests)
+            when (it.body()) {
+                LifecycleSymbol.INIT -> launch { initializeServices(log, manifests) }
+                LifecycleSymbol.CLOSE -> launch { closeServices(manifests) }
+                else -> {}
             }
         }
+    }
+
+    protected fun publishSystemStartEvent() {
+        vertx.eventBus().publish(serviceLifeCycleAddress, LifecycleSymbol.INIT)
     }
 
     private suspend fun initializeServices(log: Logger, manifests: Collection<ContextServiceManifest>) {
@@ -67,6 +73,14 @@ abstract class BaseVerticle : CoroutineVerticle() {
                 }
             }
         }
+    }
+
+    protected object LifecycleSymbol {
+
+        const val INIT = "init"
+
+        const val CLOSE = "close"
+
     }
 
 }

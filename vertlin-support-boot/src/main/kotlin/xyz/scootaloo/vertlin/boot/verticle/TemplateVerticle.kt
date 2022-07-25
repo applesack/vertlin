@@ -1,5 +1,6 @@
 package xyz.scootaloo.vertlin.boot.verticle
 
+import xyz.scootaloo.vertlin.boot.core.Helper
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 
 /**
@@ -9,11 +10,14 @@ import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 class TemplateVerticle(
     private val contextName: String,
     private val manifests: List<ContextServiceManifest>
-) : BaseVerticle() {
+) : BaseVerticle(), Helper {
+
+    private val log = getLogger("$contextName-verticle")
 
     override suspend fun start() {
         registerResources(contextName)
         registerServices(contextName, manifests)
+        listeningLifeCycleEvents(log, manifests)
     }
 
     override suspend fun stop() {

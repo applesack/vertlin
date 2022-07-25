@@ -100,7 +100,7 @@ internal object Container {
 
     private fun realThreadName(): String {
         val threadName = Thread.currentThread().name
-        val idx = threadName.indexOf(' ')
+        val idx = threadName.lastIndexOf(' ')
         if (idx > 0) {
             return threadName.substring(0, idx)
         }
