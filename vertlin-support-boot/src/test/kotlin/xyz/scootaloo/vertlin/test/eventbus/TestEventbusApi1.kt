@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import xyz.scootaloo.vertlin.boot.BootManifest
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.Service
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
 import xyz.scootaloo.vertlin.boot.internal.inject
 import kotlin.reflect.KClass
@@ -15,9 +15,9 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/24 上午10:03
  */
-class TestEventbusApi1 : BootManifest, Helper {
+class TestEventbusApi1 : BootManifest {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
     private val testApi by inject(TestApi::class)
 
     @Test
@@ -34,9 +34,9 @@ class TestEventbusApi1 : BootManifest, Helper {
 }
 
 @Context("test")
-class TestApi : EventbusApi(), Helper {
+class TestApi : EventbusApi() {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
 
     val hello = api {
         log.info("invoking")

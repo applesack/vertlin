@@ -3,7 +3,7 @@ package xyz.scootaloo.vertlin.boot.crontab
 import io.vertx.core.Vertx
 import xyz.scootaloo.vertlin.boot.Ordered
 import xyz.scootaloo.vertlin.boot.ServiceLifeCycle
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.currentTimeMillis
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
@@ -51,9 +51,9 @@ object CrontabResolver : ServiceResolver(), ServiceReducer<CrontabManifest> {
     private class CrontabManagerManifest(
         private val context: String,
         private val taskQue: TreeMap<String, CrontabWrapper> = TreeMap()
-    ) : ContextServiceManifest, CrontabManager, ServiceLifeCycle, Helper {
+    ) : ContextServiceManifest, CrontabManager, ServiceLifeCycle {
 
-        private val log = getLogger("$context-crontab")
+        private val log = X.getLogger("$context-crontab")
 
         private val vertx by inject(Vertx::class)
 

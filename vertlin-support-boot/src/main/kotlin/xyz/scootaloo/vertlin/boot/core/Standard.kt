@@ -1,5 +1,9 @@
 package xyz.scootaloo.vertlin.boot.core
 
+import io.vertx.core.Future
+import io.vertx.core.Promise
+import io.vertx.core.Vertx
+import io.vertx.kotlin.coroutines.awaitResult
 import xyz.scootaloo.vertlin.boot.internal.Constant
 
 /**
@@ -22,6 +26,36 @@ infix fun String.like(other: String): Boolean {
     if (this.length != other.length)
         return false
     return this.startsWith(other, true)
+}
+
+
+infix fun <T> Promise<T>.complete(value: T?) {
+    this.complete(value)
+}
+
+fun <T> T.wrapInFut(): Future<T> {
+    return Future.succeededFuture(this)
+}
+
+fun <T, R> Future<T>.trans(lazy: (T) -> R): Future<R> {
+    return this.transform { done ->
+        if (done.succeeded()) {
+            Future.succeededFuture(lazy(done.result()))
+        } else {
+            Future.failedFuture(done.cause())
+        }
+    }
+}
+
+suspend fun <T> awaitParallelBlocking(block: () -> T): T {
+    return awaitResult { handler ->
+        val ctx = Vertx.currentContext()
+        ctx.executeBlocking({ fut ->
+            fut complete block()
+        }, false, { ar ->
+            handler.handle(ar)
+        })
+    }
 }
 
 

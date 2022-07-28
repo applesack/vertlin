@@ -63,7 +63,7 @@ object EventbusApiResolver : ServiceResolver(), ServiceReducer<JsonCodec<Any>> {
             }
         }
 
-        manager.publishSingleton(instance)
+        manager.publishSharedSingleton(instance)
         manager.registerManifest(manifest)
     }
 

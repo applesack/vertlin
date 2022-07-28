@@ -1,10 +1,14 @@
 package xyz.scootaloo.vertlin.boot.verticle
 
 import io.vertx.kotlin.coroutines.await
-import xyz.scootaloo.vertlin.boot.core.Helper
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.joinAll
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.internal.Container
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
+import java.util.*
 
 /**
  * @author flutterdash@qq.com
@@ -13,9 +17,9 @@ import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 class MainVerticle(
     private val systemManifest: List<ContextServiceManifest>,
     private val contexts: Map<String, List<ContextServiceManifest>>
-) : BaseVerticle(), Helper {
+) : BaseVerticle() {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
     private val deploymentIds = ArrayList<String>()
     private val contextName = Constant.SYSTEM
 
@@ -57,10 +61,12 @@ class MainVerticle(
         }
 
         try {
+            val waitList = LinkedList<Deferred<String>>()
             for (v in verticle) {
-                val deploymentId = vertx.deployVerticle(v).await()
-                deploymentIds.add(deploymentId)
+                waitList.add(async { vertx.deployVerticle(v).await() })
             }
+            waitList.joinAll()
+            deploymentIds.addAll(waitList.map { it.await() })
         } catch (error: Throwable) {
             stop()
             shutdown()

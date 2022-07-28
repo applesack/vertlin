@@ -68,12 +68,12 @@ internal object Container {
 
     internal fun registerVertx(vertx: Vertx) {
         this.vertx = vertx
-        registerSingleton(vertx, Vertx::class)
-        registerSingleton(vertx.eventBus(), EventBus::class)
-        registerSingleton(vertx.fileSystem(), FileSystem::class)
+        registerSharedSingleton(vertx, Vertx::class)
+        registerSharedSingleton(vertx.eventBus(), EventBus::class)
+        registerSharedSingleton(vertx.fileSystem(), FileSystem::class)
     }
 
-    internal fun registerSingleton(obj: Any, type: KClass<*> = obj::class) {
+    internal fun registerSharedSingleton(obj: Any, type: KClass<*> = obj::class) {
         val typeQName = TypeUtils.solveQualifiedName(type)
         singletonLock.write {
             singletons[typeQName] = obj

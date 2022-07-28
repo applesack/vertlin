@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import xyz.scootaloo.vertlin.boot.BootManifest
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.Service
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.crontab.CrontabAdapter
 import xyz.scootaloo.vertlin.boot.crontab.CrontabManager
 import xyz.scootaloo.vertlin.boot.internal.inject
@@ -36,11 +36,11 @@ class TestCrontab : BootManifest {
 
 
 @Context("test")
-class TestCrontabService1 : CrontabAdapter(), Helper {
+class TestCrontabService1 : CrontabAdapter() {
 
     private val manager by inject(CrontabManager::class)
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
 
     override val id = "hello"
 
@@ -53,9 +53,9 @@ class TestCrontabService1 : CrontabAdapter(), Helper {
 
 }
 
-class TestCrontabService2 : CrontabAdapter(), Helper {
+class TestCrontabService2 : CrontabAdapter() {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
 
     override val id = "hello"
 

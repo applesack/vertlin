@@ -1,6 +1,6 @@
 package xyz.scootaloo.vertlin.boot.util
 
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.exception.CreateInstanceException
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import kotlin.reflect.KClass
@@ -10,9 +10,9 @@ import kotlin.reflect.jvm.isAccessible
  * @author flutterdash@qq.com
  * @since 2022/7/19 上午10:01
  */
-object TypeUtils : Helper {
+object TypeUtils {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
 
     fun solveQualifiedName(type: KClass<*>, def: String = Constant.EMPTY_STR): String {
         return type.qualifiedName ?: return kotlin.run {

@@ -20,18 +20,22 @@ class StopWatch {
         taskMapper[name] = newTask
     }
 
-    fun stop(name: String): Long {
+    fun stop(name: String): Double {
         val task = taskMapper[name] ?: throw IllegalStateException("当前容器内没有名为'$name'的计时任务")
         if (task.finished) {
             throw IllegalStateException("该计时任务已经完成, 不能重复标记")
         }
         task.timeMills = currentTimeMillis() - task.startTime
         task.finished = true
-        return task.timeMills
+        return prettyTotalTimeSeconds(task.timeMills)
     }
 
     fun clear() {
         taskMapper.clear()
+    }
+
+    private fun prettyTotalTimeSeconds(time: Long): Double {
+        return time / 1000.0
     }
 
     private class TaskInfo(

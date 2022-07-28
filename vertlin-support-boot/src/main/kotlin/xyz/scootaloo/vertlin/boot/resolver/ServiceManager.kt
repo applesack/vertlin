@@ -13,7 +13,7 @@ interface ServiceManager {
     /**
      * 发布一个单例, 可以通过[type]来设定实例的真实类型
      */
-    fun publishSingleton(ins: Any, type: KClass<out Any> = ins::class)
+    fun publishSharedSingleton(ins: Any, type: KClass<out Any> = ins::class)
 
     fun publishContextSingleton(ins: Any, context: String, type: KClass<out Any>)
 

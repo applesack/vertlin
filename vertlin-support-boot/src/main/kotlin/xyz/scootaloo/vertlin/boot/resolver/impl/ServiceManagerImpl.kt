@@ -1,6 +1,6 @@
 package xyz.scootaloo.vertlin.boot.resolver.impl
 
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.internal.Container
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
@@ -16,20 +16,27 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/24 下午3:28
  */
-internal object ServiceManagerImpl : ServiceManager, Helper {
+internal object ServiceManagerImpl : ServiceManager {
 
-    private val log = getLogger()
+    private val log = X.getLogger(this::class)
+    private var closed = false
 
     private val manifests = HashMap<String, MutableList<ContextServiceManifest>>()
     private val singletons = HashMap<String, Pair<KClass<out Any>, Any>>()
     private val contextSingletons = HashMap<String, HashMap<String, Pair<KClass<out Any>, Any>>>()
 
     override fun registerManifest(manifest: ContextServiceManifest) {
+        if (closed) {
+            return
+        }
         val type = TypeUtils.solveQualifiedName(manifest::class)
         CUtils.grouping(manifests, type, manifest) { LinkedList() }
     }
 
-    override fun publishSingleton(ins: Any, type: KClass<out Any>) {
+    override fun publishSharedSingleton(ins: Any, type: KClass<out Any>) {
+        if (closed) {
+            return
+        }
         val typeQName = TypeUtils.solveQualifiedName(type)
         if (typeQName in singletons) {
             val caller = Rearview.formatCaller(4)
@@ -43,6 +50,9 @@ internal object ServiceManagerImpl : ServiceManager, Helper {
     }
 
     override fun publishContextSingleton(ins: Any, context: String, type: KClass<out Any>) {
+        if (closed) {
+            return
+        }
         val mapper = contextSingletons[context] ?: HashMap()
         contextSingletons[context] = mapper
 
@@ -68,7 +78,7 @@ internal object ServiceManagerImpl : ServiceManager, Helper {
 
     fun publishAllSingletons() {
         for ((type, ins) in singletons.values) {
-            Container.registerSingleton(ins, type)
+            Container.registerSharedSingleton(ins, type)
         }
         for ((context, mapper) in contextSingletons) {
             for ((_, pair) in mapper) {
@@ -83,6 +93,7 @@ internal object ServiceManagerImpl : ServiceManager, Helper {
     }
 
     fun clearCache() {
+        closed = true
         manifests.clear()
         singletons.clear()
         contextSingletons.clear()

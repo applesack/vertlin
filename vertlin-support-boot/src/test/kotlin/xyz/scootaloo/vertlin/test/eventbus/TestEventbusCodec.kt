@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import xyz.scootaloo.vertlin.boot.BootManifest
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.Service
-import xyz.scootaloo.vertlin.boot.core.Helper
+import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.TestDSL
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusDecoder
@@ -40,7 +40,7 @@ class TestEventbusCodec : BootManifest, TestDSL {
 }
 
 @Context("test")
-class TestCodec : EventbusApi(), EventbusDecoder, Helper {
+class TestCodec : EventbusApi(), EventbusDecoder {
 
     val hello = api {
         Pair("abc", "456")
