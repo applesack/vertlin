@@ -8,5 +8,5 @@ dependencies {
 
     api "io.vertx:vertx-web:$vertxVersion"
 
-    api project(":vertlin-support-boot")
+    api project(":vertlin-boot")
 }

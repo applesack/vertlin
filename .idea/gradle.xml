@@ -9,8 +9,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/vertlin-support-boot" />
-            <option value="$PROJECT_DIR$/vertlin-support-web" />
+            <option value="$PROJECT_DIR$/vertlin-boot" />
+            <option value="$PROJECT_DIR$/vertlin-ext" />
+            <option value="$PROJECT_DIR$/vertlin-ext/vertlin-ext-web" />
           </set>
         </option>
       </GradleProjectSettings>

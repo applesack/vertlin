@@ -1,6 +1,5 @@
 package xyz.scootaloo.vertlin.web.resolver
 
-import io.vertx.core.Vertx
 import io.vertx.core.http.ServerWebSocket
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import xyz.scootaloo.vertlin.boot.resolver.ResourcesPublisher
