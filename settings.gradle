@@ -1,4 +1,5 @@
 rootProject.name = "vertlin"
 
 include ":vertlin-support-boot"
+include ":vertlin-support-web"
 

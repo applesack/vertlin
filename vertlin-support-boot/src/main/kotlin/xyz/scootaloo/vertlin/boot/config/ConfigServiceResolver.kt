@@ -5,7 +5,7 @@ import xyz.scootaloo.vertlin.boot.command.CommandLineArgs
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.exception.RequiredConfigLackException
 import xyz.scootaloo.vertlin.boot.internal.Constant
-import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
+import xyz.scootaloo.vertlin.boot.resolver.ResourcesPublisher
 import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
 import xyz.scootaloo.vertlin.boot.util.CUtils
 import java.util.*
@@ -20,15 +20,11 @@ import kotlin.reflect.jvm.javaConstructor
  * @author flutterdash@qq.com
  * @since 2022/7/27 下午3:41
  */
-object ConfigServiceResolver : ServiceResolver() {
+object ConfigServiceResolver : ServiceResolver(Config::class) {
 
     private val log = X.getLogger(this::class)
 
-    override fun acceptType(): KClass<*> {
-        return Config::class
-    }
-
-    override fun solve(type: KClass<*>, manager: ServiceManager) {
+    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
         val result = createInstance(type)
         if (result.isFailure) {
             throw TypeMismatchingException(type, result.exceptionOrNull())

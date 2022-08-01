@@ -6,10 +6,7 @@ import xyz.scootaloo.vertlin.boot.ServiceLifeCycle
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.currentTimeMillis
 import xyz.scootaloo.vertlin.boot.internal.inject
-import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
-import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
-import xyz.scootaloo.vertlin.boot.resolver.ServiceReducer
-import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
+import xyz.scootaloo.vertlin.boot.resolver.*
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import java.util.LinkedList
 import java.util.TreeMap
@@ -19,13 +16,9 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/24 下午10:51
  */
-object CrontabResolver : ServiceResolver(), ServiceReducer<CrontabManifest> {
+object CrontabResolver : ServiceResolver(Crontab::class), ManifestReducer {
 
-    override fun acceptType(): KClass<*> {
-        return Crontab::class
-    }
-
-    override fun solve(type: KClass<*>, manager: ServiceManager) {
+    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
         val context = solveContext(type)
         val instance = TypeUtils.createInstanceByNonArgsConstructor(type)
         val crontab = instance as Crontab
@@ -33,12 +26,8 @@ object CrontabResolver : ServiceResolver(), ServiceReducer<CrontabManifest> {
         manager.registerManifest(manifest)
     }
 
-    override fun acceptSourceType(): KClass<CrontabManifest> {
-        return CrontabManifest::class
-    }
-
-    override fun reduce(services: MutableList<ContextServiceManifest>, manager: ServiceManager) {
-        val contexts = transfer(services).groupBy { it.context() }
+    override fun reduce(manager: ManifestManager) {
+        val contexts = manager.extractManifests(CrontabManifest::class).groupBy { it.context() }
         for ((context, crontab) in contexts) {
             val crontabMgr = CrontabManagerManifest(context)
             crontabMgr.initialize(crontab.map { it.crontab })

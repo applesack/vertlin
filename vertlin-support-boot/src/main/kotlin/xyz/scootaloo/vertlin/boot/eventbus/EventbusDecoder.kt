@@ -3,7 +3,8 @@ package xyz.scootaloo.vertlin.boot.eventbus
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.EventBus
 import io.vertx.core.json.JsonObject
-import java.util.LinkedList
+import xyz.scootaloo.vertlin.boot.Service
+import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -14,7 +15,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/24 下午8:27
  */
-interface EventbusDecoder {
+interface EventbusDecoder : Service {
 
     /**
      * 根据入参, 配置反序列化器

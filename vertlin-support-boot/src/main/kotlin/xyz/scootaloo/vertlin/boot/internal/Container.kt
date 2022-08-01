@@ -33,7 +33,6 @@ internal object Container {
     private val contextSingletons = ConcurrentHashMap<String, HashMap<String, Any>>()
 
     fun getObject(type: KClass<*>): Any? {
-        checkState()
         val typeQName = TypeUtils.solveQualifiedName(type)
         return singletonLock.read {
             singletons[typeQName]
@@ -41,7 +40,6 @@ internal object Container {
     }
 
     fun getContextObject(type: KClass<*>): Any? {
-        checkState()
         val threadName = realThreadName()
         val contextName = contextLock.read {
             contextMapper[threadName]

@@ -1,10 +1,10 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
-import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.eventbus.MessageCodec
 import io.vertx.core.json.JsonObject
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
+import xyz.scootaloo.vertlin.boot.resolver.UnreachableManifest
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import kotlin.reflect.KClass
 
@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
 class JsonCodec<R : Any>(
     internal val type: KClass<R>,
     private val convert: (JsonObject) -> R
-) : ContextServiceManifest {
+) : ContextServiceManifest by UnreachableManifest {
 
     internal fun decode(json: JsonObject): R {
         return convert(json)
@@ -24,18 +24,6 @@ class JsonCodec<R : Any>(
 
     internal fun toMessageCodec(): MessageCodec<R, R> {
         return JsonMessageDecoder(type, this)
-    }
-
-    override fun name(): String {
-        throw UnsupportedOperationException()
-    }
-
-    override fun context(): String {
-        throw UnsupportedOperationException()
-    }
-
-    override suspend fun register(vertx: Vertx) {
-        throw UnsupportedOperationException()
     }
 
 }

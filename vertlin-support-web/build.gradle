@@ -1,0 +1,12 @@
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    def vertxVersion = rootProject.property("vertx_version")
+
+    api "io.vertx:vertx-web:$vertxVersion"
+
+    api project(":vertlin-support-boot")
+}

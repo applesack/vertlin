@@ -3,20 +3,19 @@ package xyz.scootaloo.vertlin.boot.resolver.impl
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.internal.Container
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
-import xyz.scootaloo.vertlin.boot.resolver.ServiceManager
-import xyz.scootaloo.vertlin.boot.resolver.ServiceReducer
+import xyz.scootaloo.vertlin.boot.resolver.ManifestManager
+import xyz.scootaloo.vertlin.boot.resolver.ManifestReducer
 import xyz.scootaloo.vertlin.boot.util.CUtils
 import xyz.scootaloo.vertlin.boot.util.Rearview
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.reflect.KClass
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/7/24 下午3:28
  */
-internal object ServiceManagerImpl : ServiceManager {
+internal object ManifestManagerImpl : ManifestManager {
 
     private val log = X.getLogger(this::class)
     private var closed = false
@@ -24,6 +23,12 @@ internal object ServiceManagerImpl : ServiceManager {
     private val manifests = HashMap<String, MutableList<ContextServiceManifest>>()
     private val singletons = HashMap<String, Pair<KClass<out Any>, Any>>()
     private val contextSingletons = HashMap<String, HashMap<String, Pair<KClass<out Any>, Any>>>()
+
+    override fun <T : ContextServiceManifest> extractManifests(type: KClass<T>): List<T> {
+        val typeQName = TypeUtils.solveQualifiedName(type)
+        @Suppress("UNCHECKED_CAST")
+        return (manifests.remove(typeQName) ?: emptyList<T>()) as List<T>
+    }
 
     override fun registerManifest(manifest: ContextServiceManifest) {
         if (closed) {
@@ -68,12 +73,8 @@ internal object ServiceManagerImpl : ServiceManager {
         mapper[typeQName] = type to ins
     }
 
-    fun reduce(reducer: ServiceReducer<*>) {
-        val acc = reducer.acceptSourceType()
-        val typeQName = TypeUtils.solveQualifiedName(acc)
-        val list = manifests.remove(typeQName) ?: return
-
-        reducer.reduce(list, this)
+    fun reduce(reducer: ManifestReducer) {
+        reducer.reduce(this)
     }
 
     fun publishAllSingletons() {
