@@ -14,7 +14,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/31 下午11:49
  */
-class SimpleTest : BootManifest {
+class SimpleTest : BootManifest() {
 
     @Test
     fun test(): Unit = runBlocking {

@@ -153,10 +153,8 @@ object ConfigServiceResolver : ServiceResolver(Config::class) {
         ) {
             val builder = StringBuilder()
             val (exists, fileConfig) = FileConfig.load(loader)
-            if (exists) {
-                builder.append("当前使用配置文件: '${FileConfig.defConfigName}'; ")
-            } else {
-                builder.append("默认配置文件未找到, 当前应用默认基本配置; ")
+            if (!exists) {
+                builder.append("No default configuration file found, ")
             }
 
             loadConfig(cmd.toMap())
@@ -167,18 +165,19 @@ object ConfigServiceResolver : ServiceResolver(Config::class) {
 
             if (profile.isNotEmpty()) {
                 val filename = "${prefix}-${profile}"
-                builder.append("激活Profile[$filename]")
+                builder.append("The flowing profiles are active: $filename")
+                log.info(builder)
                 val (e, f) = FileConfig.load(loader, filename)
                 if (!e) {
-                    log.info(builder)
-                    log.warn("当前配置指定Profile为[$profile], 但'$filename'未找到")
+                    log.warn("Profile $filename not found")
                     return
                 } else {
                     loadConfig(f, true)
                 }
+            } else {
+                builder.append("No active profile set, enabling default setting")
+                log.info(builder)
             }
-
-            log.info(builder)
         }
 
         private fun loadConfig(config: Map<String, Any>, override: Boolean = true) {
@@ -255,7 +254,7 @@ object ConfigServiceResolver : ServiceResolver(Config::class) {
 
     private object FileConfig {
 
-        const val defConfigName = "config.toml"
+//        const val defConfigName = "config.toml"
 
         // https://github.com/mwanji/toml4j
         private val toml = Toml()

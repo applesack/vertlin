@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/24 上午10:03
  */
-class TestEventbusApi1 : BootManifest {
+class TestEventbusApi1 : BootManifest() {
 
     private val log = X.getLogger(this::class)
     private val testApi by inject(TestApi::class)

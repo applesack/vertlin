@@ -28,12 +28,12 @@ class HttpServerConfigProvider : ConfigProvider {
     }
 
     private fun checkPort(value: Any): Boolean {
-        if (value !is Int) {
+        if (value !is Number) {
             log.warn("配置项'${port}'必须是数字")
             return false
         }
-        val number = value as Int
-        if (number !in 1..65536) {
+        val num = value.toInt()
+        if (num < 1 || num > 65535) {
             log.warn("配置项'${port}'取值为1~65535")
             return false
         }

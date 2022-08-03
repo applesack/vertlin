@@ -17,7 +17,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/25 下午3:43
  */
-class TestCrontab : BootManifest {
+class TestCrontab : BootManifest() {
 
     @Test
     fun test(): Unit = runBlocking {

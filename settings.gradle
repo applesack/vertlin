@@ -1,5 +1,10 @@
 rootProject.name = "vertlin"
 
 include ":vertlin-boot"
+
 include ":vertlin-ext:vertlin-ext-web"
+include ":vertlin-ext:vertlin-ext-smart-eventbus"
+
+include ":vertlin-projects:hello-world"
+include ":vertlin-projects:just-dav"
 

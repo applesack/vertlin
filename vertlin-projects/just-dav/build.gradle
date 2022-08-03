@@ -1,0 +1,5 @@
+dependencies {
+    implementation project(":vertlin-boot")
+    implementation project(":vertlin-ext:vertlin-ext-web")
+    implementation "org.dom4j:dom4j:2.1.3"
+}

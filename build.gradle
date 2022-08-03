@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "org.jetbrains.kotlin.jvm" version "1.7.10"
+    id "org.jetbrains.kotlin.plugin.serialization" version "1.7.10"
 }
 
 repositories {
@@ -34,6 +35,7 @@ subprojects {
     apply {
         plugin "java"
         plugin "org.jetbrains.kotlin.jvm"
+        plugin "kotlinx-serialization"
     }
 
     test {
@@ -72,6 +74,9 @@ subprojects {
         api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
         api "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         api "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
+
+        // https://github.com/Kotlin/kotlinx.serialization
+        api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0-RC"
 
         testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.0"

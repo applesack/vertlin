@@ -14,7 +14,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/28 下午10:14
  */
-class TestConfig : BootManifest {
+class TestConfig : BootManifest() {
 
     private val hello by inject(Hello::class)
 

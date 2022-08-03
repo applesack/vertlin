@@ -1,6 +1,9 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.eventbus.EventBus
+import io.vertx.core.json.JsonObject
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.InjectableService
 
 /**
@@ -24,6 +27,10 @@ abstract class EventbusApi : InjectableService {
         consumer: EventbusConsumer<T>
     ): EventbusApiBuilder<T> {
         return EventbusApiBuilder(consumer)
+    }
+
+    protected inline fun <reified T> JsonObject.asPojo(): T {
+        return Json.decodeFromString(this.toString())
     }
 
 }

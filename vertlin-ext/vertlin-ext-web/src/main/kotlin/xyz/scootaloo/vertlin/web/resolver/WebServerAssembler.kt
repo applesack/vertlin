@@ -2,9 +2,12 @@ package xyz.scootaloo.vertlin.web.resolver
 
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.impl.logging.Logger
 import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.BodyHandler
+import io.vertx.kotlin.core.http.httpServerOptionsOf
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.internal.CoroutineResource
@@ -23,6 +26,7 @@ import kotlin.reflect.KClass
 class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestReducer {
 
     private val log = X.getLogger(this::class)
+    private val config by inject(HttpServerConfig::class)
 
     override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
         throw UnsupportedOperationException()
@@ -31,17 +35,20 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
     override fun reduce(manager: ManifestManager) {
         val routers = manager.extractManifests(HttpRouterManifest::class).map { it.component }
         val websocketHandlers = manager.extractManifests(WebSocketManifest::class).map { it.wsHandler }
-        val finalManifest = HttpServerManifest(log, routers, websocketHandlers)
+        val finalManifest = HttpServerManifest(log, routers, websocketHandlers, config)
+
+        log.info("Vert.x HttpServer initialized with port(s): ${config.port} (http)")
+
         manager.registerManifest(finalManifest)
     }
 
     class HttpServerManifest(
         private val log: Logger,
         private val httpRouters: List<HttpRouterResolver.RouterComponent>,
-        private val websocketHandler: List<suspend (ServerWebSocket) -> Unit>
+        private val websocketHandler: List<suspend (ServerWebSocket) -> Unit>,
+        private val config: HttpServerConfig
     ) : ContextServiceManifest {
 
-        private val config by inject(HttpServerConfig::class)
         private val coroutine by inject(CoroutineResource::class)
         private lateinit var server: HttpServer
 
@@ -54,15 +61,23 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
         }
 
         override suspend fun register(vertx: Vertx) {
-            server = vertx.createHttpServer()
+            log.info("Staring service [Vertx Web]")
+
+            server = vertx.createHttpServer(httpServerOptions())
             server.requestHandler(bindReqRouters(vertx))
             bindWebSocketHandler()
             server.listen(config.port).await()
-            log.info("http-server: listen[${config.port}]")
+
+            log.info("Vert.x Web started on port(s) ${config.port} (HTTP)")
+        }
+
+        private fun httpServerOptions(): HttpServerOptions {
+            return httpServerOptionsOf()
         }
 
         private fun bindReqRouters(vertx: Vertx): Router {
             val rootRouter = Router.router(vertx)
+            rootRouter.route().handler(BodyHandler.create())
             if (httpRouters.isEmpty()) {
                 log.warn("http-server: 未找到任何请求处理器实现")
                 return rootRouter

@@ -2,6 +2,7 @@ package xyz.scootaloo.vertlin.boot
 
 import io.vertx.core.Future
 import io.vertx.core.Vertx
+import io.vertx.core.impl.logging.Logger
 import xyz.scootaloo.vertlin.boot.command.CommandLineArgs
 import xyz.scootaloo.vertlin.boot.config.Config
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
@@ -26,6 +27,8 @@ import xyz.scootaloo.vertlin.boot.resolver.impl.ManifestManagerImpl
 import xyz.scootaloo.vertlin.boot.util.StopWatch
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import xyz.scootaloo.vertlin.boot.verticle.MainVerticle
+import java.lang.management.ManagementFactory
+import java.net.InetAddress
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -33,7 +36,7 @@ import kotlin.reflect.KClass
  * @author flutterdash@qq.com
  * @since 2022/7/17 下午5:10
  */
-object ApplicationRunner {
+class ApplicationRunner(val boot: BootManifest) {
 
     private val log = X.getLogger(this::class)
     private val loader = this::class.java.classLoader
@@ -42,6 +45,8 @@ object ApplicationRunner {
 
     private val resolvers = HashMap<String, ServiceResolver>()
     private val manifests = LinkedList<ContextServiceManifest>()
+
+    private val monitor = Monitor(log, boot::class)
 
     /**
      * 1. 扫描扩展, 生成资源集合(主要是解析器和默认服务)
@@ -68,17 +73,17 @@ object ApplicationRunner {
      *     PS: 此时代码执行切回main线程
      *
      */
-    fun run(manifest: BootManifest, args: Array<String>): Future<Unit> {
+    fun run(args: Array<String>): Future<Unit> {
         return try {
-            Monitor.displayProjectInfo()
+            monitor.displayProjectInfo()
             val commandLine = CommandLineArgs.parse(args)
             loadResources(commandLine)
             if (!handleCommandLine(args)) {
                 return Unit.wrapInFut()
             }
 
-            loadResolvers(manifest.resolvers())
-            loadServices(manifest.services())
+            loadResolvers(boot.resolvers())
+            loadServices(boot.services())
 
             startServers().transform { done ->
                 if (done.succeeded()) {
@@ -105,14 +110,16 @@ object ApplicationRunner {
         )
     }
 
-    private fun loadResolvers(resolvers: Collection<ServiceResolver>) {
+    private fun loadResolvers(resolvers: Collection<KClass<out ServiceResolver>>) {
         fun load(resolver: ServiceResolver) {
             val accept = resolver.accept
             val typeQualified = TypeUtils.solveQualifiedName(accept)
             this.resolvers[typeQualified] = resolver
         }
 
-        resolvers.forEach { load((it)) }
+        monitor.displayBeforeServicesResolve()
+
+        resolvers.forEach { load((TypeUtils.createInstanceByNonArgsConstructor(it)) as ServiceResolver) }
         Extension.instances(ServiceResolver::class).forEach { load(it) }
 
         this.resolvers[TypeUtils.solveQualifiedName(EventbusApi::class)] = EventbusApiResolver
@@ -120,8 +127,6 @@ object ApplicationRunner {
         this.resolvers[TypeUtils.solveQualifiedName(CrontabAdapter::class)] = CrontabResolver
         this.resolvers[TypeUtils.solveQualifiedName(Crontab::class)] = CrontabResolver
         this.resolvers[TypeUtils.solveQualifiedName(Config::class)] = ConfigServiceResolver
-
-        Monitor.displayBeforeServicesResolve()
     }
 
     private fun loadServices(services: Collection<KClass<*>>) {
@@ -152,6 +157,7 @@ object ApplicationRunner {
         services.forEach { load(it) }
         Extension.types(Service::class).forEach { load(it) }
 
+        manager.publishAllSingletons()
         val reducers = resolvers.values.filterIsInstance<ManifestReducer>()
         for (reducer in reducers) {
             manager.reduce(reducer)
@@ -160,7 +166,7 @@ object ApplicationRunner {
         manager.publishAllSingletons()
         manifests.addAll(manager.displayManifests())
 
-        Monitor.displayFinishServiceResolve()
+        monitor.displayFinishServiceResolve()
     }
 
     private fun startServers(): Future<Vertx> {
@@ -195,9 +201,8 @@ object ApplicationRunner {
     }
 
     private fun finish() {
-        // 在 [MainVerticle] 中, 已经标记了容器的完成状态
         clearCache()
-        Monitor.displayFinishBootstrap()
+        monitor.displayFinishBootstrap()
     }
 
     private fun clearCache() {
@@ -206,26 +211,43 @@ object ApplicationRunner {
         manifests.clear()
     }
 
-    private object Monitor {
+    private class Monitor(val log: Logger, val boot: KClass<*>) {
 
-        fun displayProjectInfo() {
-            // todo 显示项目名称
-            // 启动项目'项目名'; PID/512, Path(/user/), usr/twi;
-            // Starting 'ProjectName' on 'computerName' with PID 12121 (path started by 'user' in '')
+        private val stopWatch = StopWatch()
+
+        companion object {
+            private const val BOOT = "boot"
+            private const val RESOLVE = "resolve"
         }
 
-        fun displayProfile() {
-            // No active profile set, falling back to default profiles: default
+        fun displayProjectInfo() {
+            val builder = StringBuilder()
+            builder.append("Starting ${boot.simpleName} ")
+            val machine = InetAddress.getLocalHost().hostName
+            builder.append("on $machine ")
+            val pid = System.getenv("SYSTEMD_EXEC_PID")
+            builder.append("with PID $pid ")
+            val pwd = System.getenv("PWD")
+            val username = System.getenv("USERNAME")
+            builder.append("($pwd by $username)")
+            log.info(builder)
+            stopWatch.start(BOOT)
         }
 
         fun displayBeforeServicesResolve() {
-            // System
+            stopWatch.start(RESOLVE)
         }
 
         fun displayFinishServiceResolve() {
+            // ServiceResolver: finished in
+            val time = stopWatch.stop(RESOLVE)
+            log.info("Service Resolver: resolve finished in $time second")
         }
 
         fun displayFinishBootstrap() {
+            val time = stopWatch.stop(BOOT)
+            val runningTime = (ManagementFactory.getRuntimeMXBean().uptime) / 1000.0
+            log.info("Started ${boot.simpleName} in $time seconds (JVM running for $runningTime)")
         }
 
         fun displayFailureBootstrap() {

@@ -87,6 +87,8 @@ internal object ManifestManagerImpl : ManifestManager {
                 Container.registerContextSingleton(ins, context, type)
             }
         }
+        singletons.clear()
+        contextSingletons.clear()
     }
 
     fun displayManifests(): List<ContextServiceManifest> {

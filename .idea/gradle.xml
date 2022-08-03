@@ -11,7 +11,11 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/vertlin-boot" />
             <option value="$PROJECT_DIR$/vertlin-ext" />
+            <option value="$PROJECT_DIR$/vertlin-ext/vertlin-ext-smart-eventbus" />
             <option value="$PROJECT_DIR$/vertlin-ext/vertlin-ext-web" />
+            <option value="$PROJECT_DIR$/vertlin-projects" />
+            <option value="$PROJECT_DIR$/vertlin-projects/hello-world" />
+            <option value="$PROJECT_DIR$/vertlin-projects/just-dav" />
           </set>
         </option>
       </GradleProjectSettings>

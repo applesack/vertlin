@@ -24,6 +24,9 @@ class MainVerticle(
     private val contextName = Constant.SYSTEM
 
     override suspend fun start() {
+        val contextNames = contexts.map { it.key }.joinToString(", ")
+        log.info("Initializing vert.x embedded contexts ($contextNames)")
+
         registerResources(contextName)
 
         val result = runCatching {
@@ -68,6 +71,7 @@ class MainVerticle(
             waitList.joinAll()
             deploymentIds.addAll(waitList.map { it.await() })
         } catch (error: Throwable) {
+            log.error("部署服务失败", error)
             stop()
             shutdown()
         }

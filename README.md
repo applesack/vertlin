@@ -58,14 +58,112 @@ vertx.deployVerticle(MainVerticle())
 这行划掉, 短期内不考虑发布到中央仓库
 
 1. 编写启动类
+```kotlin
+import xyz.scootaloo.vertlin.boot.BootManifest
 
+object Launcher : BootManifest() {
+	@JvmStatic
+	fun main(args: Array<String>) {
+		runApplication(args)
+	}
+}
+```
+启动类继承于`BootManifest`, 这个类有一些默认方法, 可以帮助启动器确定要加载哪些资源, 默认情况下(不重写任何方法), 会递归扫描当前包下所有的class文件, 找到目标实现类并作为资源载入, 可以重写这个类的方法更改加载资源的逻辑.
+
+2. 编写路由器
+```kotlin
+import io.vertx.ext.web.Router
+import xyz.scootaloo.vertlin.web.HttpRouterRegister
+
+// 处理所有以"/"开头的路径
+class HelloHttpRouter : HttpRouterRegister("/*") {
+	override fun register(router: Router) = router.run {
+        // 处理使用get访问以"/"开头的请求
+		get("/*") { // 这里可以使用协程
+			it.end("hello world")
+		}
+	}
+}
+```
+这样一个路由器就写完了. 执行`Launcher`的main方法, 服务器启动, 回到浏览器输入`http://localhost:8080`可以看到输出的`hello world`
 
 
 ## 创建HTTP服务器
 
+在`hello world`示例中编写了基本的`http`服务器, 这里是更详细地介绍一些其他功能
+
+1. 监听指定方法访问路径的请求
+
+```kotlin
+// HttpRouterRegister 实现类中
+// 提供了常用的方法get post head options delete trace connect put patch
+get("/test/:name") { ctx ->
+    val name = ctx.pathParam("name")
+    delay(2000) // 在这里暂停2秒, 模拟一个异步调用
+    ctx.end(name) // 2秒后返回捕获到的路径参数
+}
+post("/test") {
+    it.end()
+}
+put("/test") {
+    it.end()
+}
+// 路径可以是正则表达式, 参考vertx文档
+```
+
+2. 编写过滤器/拦截器
+
+```kotlin
+// 实现一个简单的权限拦截器
+@Order(Ordered.HIGHEST) // 指定优先级, 这个路由可以优先被装配
+class AuthInterceptor : HttpRouterRegister("/*") {
+
+    override fun register(router: Router) = router.run {
+        any { // 任意路径的请求都会经过这个拦截器
+            val auth = it.request().getHeader("Authentication")
+            val result = handle(ctx, auth).await() // 异步校验权限
+            if (result) {
+                // 如果检查通过则放行
+                it.next()
+            } else {
+                it.fail(401) // 返回一个错误状态码
+            }
+        }
+    }
+
+}
+```
+
+3. 修改服务器的参数
+
+服务器默认监听端口8080, 如果要修改这个配置, 在`resources`目录下创建一个`config.toml`文件, 文件内容
+
+```toml
+[http]
+port = 9090
+```
+
+这样再次启动, 端口就监听到9090了
+
+框架为`http`服务器准备了一些默认参数, 完整配置如下
+
+```
+[http]
+port = 8080
+bodyLimit = -1
+deleteUploadedFilesOnEnd = true
+uploadsDirectory = "uploads"
+
+[websocket]
+maxWebSocketFrameSize = 1024
+maxWebSocketMessageSize = 4918
+```
+
 
 
 ## WebSocket
+
+todo
 
 
 
