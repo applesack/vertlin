@@ -4,6 +4,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.ext.web.Router
 import xyz.scootaloo.vertlin.dav.service.LockService
 import xyz.scootaloo.vertlin.dav.service.OptionsService
+import xyz.scootaloo.vertlin.dav.service.PropFindService
 import xyz.scootaloo.vertlin.web.HttpRouterRegister
 
 /**
@@ -15,7 +16,7 @@ class WebDAVRouter : HttpRouterRegister("/*") {
     override fun register(router: Router) = router.run {
 
         method(HttpMethod.PROPFIND) {
-
+            PropFindService.propFind(it)
         }
 
         method(HttpMethod.PROPPATCH) {

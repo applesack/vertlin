@@ -6,7 +6,14 @@ package xyz.scootaloo.vertlin.dav.constant
  */
 object StatusCode {
 
-    // 请求体中信息缺失, 格式错误
+    const val multiStatus = 207
+
     const val badRequest = 400
+
+    const val forbidden = 403
+
+    const val notFound = 404
+
+    const val internalError = 500
 
 }

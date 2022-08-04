@@ -67,6 +67,7 @@ suspend fun <T> awaitParallelBlocking(block: () -> T): T {
 class LazyValue<T : Any>(
     private val init: () -> T
 ) {
+
     private var flag = Constant.PRESET
     val value: T
         get() {
@@ -76,4 +77,13 @@ class LazyValue<T : Any>(
             @Suppress("UNCHECKED_CAST")
             return flag as T
         }
+
+    companion object {
+
+        fun <T : Any> nothing(): LazyValue<T> {
+            return LazyValue { throw UnsupportedOperationException() }
+        }
+
+    }
+
 }

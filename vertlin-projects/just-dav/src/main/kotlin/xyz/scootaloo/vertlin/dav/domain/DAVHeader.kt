@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * @since 2022/8/1 下午11:04
  */
 @Serializable
-class DepthHeader(
+data class DepthHeader(
     val depth: Int,
     val noRoot: Boolean
 )

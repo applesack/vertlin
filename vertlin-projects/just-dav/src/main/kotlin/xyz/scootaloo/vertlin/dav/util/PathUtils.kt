@@ -14,7 +14,7 @@ object PathUtils {
     }
 
     fun encodeUriComponent(uri: String): String {
-        return URLEncoder.encode(uri, "UTF-8")
+        return URLEncoder.encode(uri, "UTF-8").replace("%2F", "/")
     }
 
 }

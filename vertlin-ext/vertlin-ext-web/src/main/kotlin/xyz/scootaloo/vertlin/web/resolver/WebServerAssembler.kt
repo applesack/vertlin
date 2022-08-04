@@ -68,7 +68,7 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
             bindWebSocketHandler()
             server.listen(config.port).await()
 
-            log.info("Vert.x Web started on port(s) ${config.port} (HTTP)")
+            log.info("Vert.x Web started on port(s) ${config.port} (http)")
         }
 
         private fun httpServerOptions(): HttpServerOptions {
