@@ -5,6 +5,7 @@ import io.vertx.core.json.JsonObject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.InjectableService
+import kotlin.reflect.KClass
 
 /**
  * @author flutterdash@qq.com
@@ -29,8 +30,14 @@ abstract class EventbusApi : InjectableService {
         return EventbusApiBuilder(consumer)
     }
 
-    protected inline fun <reified T> JsonObject.asPojo(): T {
-        return Json.decodeFromString(this.toString())
+    protected inline fun <reified T> String.asPojo(): T {
+        return Json.decodeFromString(this)
     }
+
+
+    annotation class Accept(val value: KClass<*>)
+
+
+    annotation class Ret(val value: KClass<*>)
 
 }

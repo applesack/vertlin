@@ -1,34 +1,31 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.eventbus.EventBus
-import io.vertx.core.eventbus.Message
-import io.vertx.core.json.JsonObject
 import io.vertx.kotlin.coroutines.await
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.internal.inject
+import xyz.scootaloo.vertlin.boot.util.Encoder
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/7/24 上午8:32
  */
 
-typealias EventbusConsumer<T> = suspend CoroutineScope.(JsonObject) -> T
+typealias EventbusConsumer<T> = suspend CoroutineScope.(String) -> T
 
 
-class EventbusApiBuilder<T : Any>(val callback: EventbusConsumer<T>) : EventbusHandle<T> {
+class EventbusApiBuilder<Out : Any>(val callback: EventbusConsumer<Out>) {
 
-    private val eventbus by inject(EventBus::class)
+    val eventbus by inject(EventBus::class)
 
-    internal lateinit var address: String
+    lateinit var address: String
 
-    override suspend fun invoke(params: JsonObject): T {
-        return request(params).body()
-    }
-
-    override suspend fun request(params: JsonObject): Message<T> {
-        return eventbus.request<T>(address, params).await()
+    suspend inline operator fun <reified Out> invoke(params: Any): Out {
+        val encodedParams = Encoder.simpleEncode2Json(params)
+        val content = eventbus.request<String>(address, encodedParams).await().body()
+        return Json.decodeFromString(content)
     }
 
 }
-
-

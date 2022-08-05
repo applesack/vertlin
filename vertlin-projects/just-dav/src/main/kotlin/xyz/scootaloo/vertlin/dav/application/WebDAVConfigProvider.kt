@@ -31,6 +31,10 @@ class WebDAVConfigProvider : ConfigProvider {
                 log.error("配置项格式错误: 在webdav.users, 用户名为$key, 密码必须是字符串(使用双引号)")
                 return false
             }
+            if (value is String && value.isBlank()) {
+                log.error("配置项格式错误: 在webdav.users, 用户名为$key, 密码不能为空")
+                return false
+            }
         }
 
         return true

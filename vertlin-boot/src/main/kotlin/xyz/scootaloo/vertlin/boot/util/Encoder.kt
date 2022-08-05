@@ -1,8 +1,11 @@
-package xyz.scootaloo.vertlin.dav.util
+package xyz.scootaloo.vertlin.boot.util
 
-import java.nio.charset.Charset
+import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.security.MessageDigest
-import java.util.Base64
+import java.util.*
 
 /**
  * @author flutterdash@qq.com
@@ -27,6 +30,27 @@ object Encoder {
 
     fun base64decode(encoded: String): String {
         return String(base64decoder.decode(encoded))
+    }
+
+    /**
+     * @return 原始类型, 字符串, JsonArray, JsonObject
+     */
+    fun simpleEncode2Json(value: Any): Any {
+        return when (value) {
+            is List<*> -> JsonArray(value)
+            is Array<*> -> JsonArray(value.toList())
+            is String -> Json.encodeToString(value)
+            is Boolean -> Json.encodeToString(value)
+            is Byte -> Json.encodeToString(value)
+            is Short -> Json.encodeToString(value)
+            is Int -> Json.encodeToString(value)
+            is Float -> Json.encodeToString(value)
+            is Double -> Json.encodeToString(value)
+            is Long -> value
+            else -> {
+                JsonObject.mapFrom(value)
+            }
+        }
     }
 
     private fun bytes2hex(bytes: ByteArray): String {

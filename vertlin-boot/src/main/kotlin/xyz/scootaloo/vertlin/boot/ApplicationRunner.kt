@@ -225,7 +225,7 @@ class ApplicationRunner(val boot: BootManifest) {
             builder.append("Starting ${boot.simpleName} ")
             val machine = InetAddress.getLocalHost().hostName
             builder.append("on $machine ")
-            val pid = System.getenv("SYSTEMD_EXEC_PID")
+            val pid = ManagementFactory.getRuntimeMXBean().name.split('@')[0]
             builder.append("with PID $pid ")
             val pwd = System.getenv("PWD")
             val username = System.getenv("USERNAME")

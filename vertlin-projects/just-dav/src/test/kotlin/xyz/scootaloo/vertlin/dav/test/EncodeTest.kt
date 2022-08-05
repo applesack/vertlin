@@ -2,7 +2,7 @@ package xyz.scootaloo.vertlin.dav.test
 
 import org.junit.jupiter.api.Test
 import xyz.scootaloo.vertlin.boot.core.TestDSL
-import xyz.scootaloo.vertlin.dav.util.Encoder
+import xyz.scootaloo.vertlin.boot.util.Encoder
 
 /**
  * @author flutterdash@qq.com

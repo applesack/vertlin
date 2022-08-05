@@ -8,13 +8,13 @@ import xyz.scootaloo.vertlin.boot.Order
 import xyz.scootaloo.vertlin.boot.Ordered
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.currentTimeMillis
+import xyz.scootaloo.vertlin.boot.internal.inject
+import xyz.scootaloo.vertlin.boot.util.Encoder
 import xyz.scootaloo.vertlin.dav.constant.ServerDefault
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
-import xyz.scootaloo.vertlin.dav.util.Encoder
+import xyz.scootaloo.vertlin.dav.service.UserService
 import xyz.scootaloo.vertlin.web.HttpRouterRegister
-import java.net.PasswordAuthentication
-import java.util.LinkedList
-import java.util.StringJoiner
+import java.util.*
 
 /**
  * @author flutterdash@qq.com
@@ -24,6 +24,7 @@ import java.util.StringJoiner
 class DigestAuthFilter : HttpRouterRegister("/*") {
 
     private val log = X.getLogger(this::class)
+    private val userService by inject(UserService::class)
 
     override fun register(router: Router) {
         router.any {
@@ -35,18 +36,45 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
         val headers = ctx.request().headers()
         val authorization = headers[Term.H_AUTHORIZATION] ?: return sendChallenge(ctx)
         val authHeader = Utils.parseAuthHeader(ctx, authorization, log) ?: return sendChallenge(ctx)
-        verify(ctx, authHeader)
+        authentication(ctx, authHeader)
     }
 
-    private suspend fun verify(ctx: RoutingContext, header: AuthorizationHeader) {
+    // 鉴权
+    private suspend fun authentication(ctx: RoutingContext, header: AuthorizationHeader) {
+        val (valid, expired) = Utils.validateNonce(header.nonce)
+        if (!valid) {
+            return sendChallenge(ctx)
+        }
+        if (expired) {
+            return sendChallenge(ctx, true)
+        }
 
+        val password = userService.findPassByName<String>(header.username)
+        if (password.isEmpty()) return sendChallenge(ctx)
+        val computedResponse = Utils.computedResponse(header, password)
+        if (computedResponse == header.response) {
+            authorization(ctx, header, password)
+        } else {
+            sendChallenge(ctx)
+        }
+    }
+
+    // 授权
+    private fun authorization(ctx: RoutingContext, header: AuthorizationHeader, password: String) {
+        val headers = ctx.response().headers()
+        headers[Term.H_AUTHENTICATION_INFO] = Utils.authorizationInfo(header, password)
+
+        // 仅通过账号密码来确定登陆用户, 不记录用户的权限信息
+        // 如果有, 则将获取用户权限的逻辑写在这里
+
+        ctx.next()
     }
 
     private fun sendChallenge(ctx: RoutingContext, stale: Boolean = false) {
         val response = ctx.response()
         response.putHeader(Term.H_AUTHENTICATE, Utils.buildChallenge(stale))
         response.statusCode = StatusCode.unauthorized
-        ctx.end()
+        response.end()
     }
 
     private class AuthorizationHeader(
@@ -65,7 +93,6 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
         const val H_AUTHENTICATE = "WWW-Authenticate" // 质询
         const val H_AUTHORIZATION = "Authorization"   // 响应
         const val H_AUTHENTICATION_INFO = "Authentication-Info"
-        const val S_UNAUTHORIZED = 401
 
         const val DIGEST_PREFIX = "Digest"
         const val C_USER = "user"
@@ -81,9 +108,26 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
         const val C_STALE = "stale"
 
         const val DEF_QOP = "auth"
+        const val MAX_NONCE_AGE_SECONDS = 20
     }
 
     private object Utils {
+
+        fun validateNonce(nonce: String): Pair<Boolean, Boolean> = try {
+            val plainNonce = Encoder.base64decode(nonce).trim('\"')
+            val timestamp = plainNonce.substring(0, plainNonce.indexOf(' '))
+            if (nonce == newNonce(timestamp)) {
+                if (currentTimeMillis() - timestamp.toLong() > (Term.MAX_NONCE_AGE_SECONDS * 1000)) {
+                    true to true
+                } else {
+                    true to false
+                }
+            } else {
+                false to false
+            }
+        } catch (e: Throwable) {
+            false to false
+        }
 
         fun buildChallenge(stale: Boolean = false): String {
             val parts = LinkedList<Triple<String, String, Boolean>>()
@@ -93,7 +137,34 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
             if (stale) {
                 parts.add(Triple(Term.C_STALE, "true", false))
             }
-            return format(parts)
+            return "${Term.DIGEST_PREFIX} ${format(parts)}"
+        }
+
+        fun authorizationInfo(header: AuthorizationHeader, password: String): String {
+            return format(
+                listOf(
+                    Triple(Term.C_QOP, Term.DEF_QOP, true),
+                    Triple(Term.C_RSP_AUTH, rspAuth(header, password), true),
+                    Triple(Term.C_CLIENT_NONCE, header.clientNonce, true),
+                    Triple(Term.C_NONCE_COUNTER, header.nonceCounter, false)
+                )
+            )
+        }
+
+        fun computedResponse(header: AuthorizationHeader, password: String): String {
+            val a1hash = header.run { md5("$username:$realm:$password") }
+            val a2hash = header.run { md5("$method:$uri") }
+            return header.run {
+                md5("$a1hash:$nonce:$nonceCounter:$clientNonce:$qop:$a2hash")
+            }
+        }
+
+        private fun rspAuth(header: AuthorizationHeader, password: String): String {
+            val a1Hash = header.run { md5("$username:$realm:$password") }
+            val a2Hash = header.run { md5(":$uri") }
+            return header.run {
+                md5("$a1Hash:$nonce:$nonceCounter:$clientNonce:$qop:$a2Hash")
+            }
         }
 
         fun parseAuthHeader(

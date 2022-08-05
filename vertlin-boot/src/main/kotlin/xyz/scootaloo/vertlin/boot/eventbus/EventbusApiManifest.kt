@@ -4,6 +4,7 @@ import io.vertx.core.Vertx
 import xyz.scootaloo.vertlin.boot.internal.CoroutineResource
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
+import xyz.scootaloo.vertlin.boot.util.Encoder
 import java.util.LinkedList
 
 /**
@@ -29,8 +30,10 @@ class EventbusApiManifest(
         val eventbus = vertx.eventBus()
         for (consumer in consumers) {
             eventbus.consumer(consumer.address) {
-                coroutine.launch {
-                    it.reply(consumer.callback(this, it.body()))
+                coroutine.launch end@{
+                    val ret = consumer.callback(this, it.body())
+                    val encoded = Encoder.simpleEncode2Json(ret)
+                    it.reply(encoded)
                 }
             }
         }

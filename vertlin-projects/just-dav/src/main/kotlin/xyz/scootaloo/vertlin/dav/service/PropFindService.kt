@@ -32,7 +32,7 @@ object PropFindService {
 
     suspend fun propFind(ctx: RoutingContext) {
         val block = parseRequestContent(ctx)
-        val deniedSet = Json.decodeFromString<List<String>>(lockManager.detect())
+        val deniedSet = Json.decodeFromString<List<String>>(lockManager.detect(block.target))
         val response = buildResponse(block, deniedSet)
 
         ctx.response().statusCode = StatusCode.multiStatus

@@ -24,11 +24,13 @@ object LockService {
 
     suspend fun lock(ctx: RoutingContext) {
         val lockInfo = parseRequestContent(ctx) ?: return ctx.fail(StatusCode.badRequest)
-        val serialized = JsonObject.mapFrom(lockInfo)
+        val serialized = JsonObject.mapFrom(lockInfo).toString()
         if (lockInfo.condition != null) {
-            lockManager.refreshLock(serialized)
+//            lockManager.refreshLock(serialized)
+            ctx.fail(500)
         } else {
-            lockManager.lock(serialized)
+//            lockManager.lock(serialized)
+            ctx.fail(500)
         }
     }
 
