@@ -15,4 +15,8 @@ object ServerDefault {
 
     val depth = DepthHeader(1, false)
 
+    const val realm = "just-dav"
+
+    const val privateKey = "FlyMeToTheMoon"
+
 }

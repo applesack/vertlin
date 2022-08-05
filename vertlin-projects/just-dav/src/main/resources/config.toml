@@ -1,2 +1,5 @@
 [webdav]
 path = "src"
+
+[webdav.users]
+test = "123456"

@@ -55,7 +55,7 @@ object PropFindService {
         FileInfoViewer.traverse(block.target, block.depth.depth) { state, info ->
             buildResponseWithFileInfo(root, state, info, deniedSet)
         }
-        return ""
+        return xml.asXML()
     }
 
     private fun buildResponseWithFileInfo(
@@ -123,7 +123,7 @@ object PropFindService {
         return "$version $code ${details.reasonPhrase()}"
     }
 
-    object MultiStatus {
+    private object MultiStatus {
         const val response = "response"
         const val href = "href"
         const val propStat = "propstat"

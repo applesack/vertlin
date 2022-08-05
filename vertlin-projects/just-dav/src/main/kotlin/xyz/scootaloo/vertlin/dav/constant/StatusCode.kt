@@ -10,6 +10,8 @@ object StatusCode {
 
     const val badRequest = 400
 
+    const val unauthorized = 401
+
     const val forbidden = 403
 
     const val notFound = 404
