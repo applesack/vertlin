@@ -10,5 +10,7 @@ dependencies {
     api "io.vertx:vertx-lang-kotlin:$vertxVersion"
     api "io.vertx:vertx-lang-kotlin-coroutines:$vertxVersion"
     api "ch.qos.logback:logback-classic:1.2.11"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.3"
     implementation "com.moandjiezana.toml:toml4j:0.7.2"
 }

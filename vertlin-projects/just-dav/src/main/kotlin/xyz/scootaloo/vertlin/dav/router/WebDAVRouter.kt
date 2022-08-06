@@ -28,7 +28,7 @@ class WebDAVRouter : HttpRouterRegister("/*") {
         }
 
         get {
-            it.end("hello world")
+            it.end("hello world: ${it.pathParam("*")}")
         }
 
         head {

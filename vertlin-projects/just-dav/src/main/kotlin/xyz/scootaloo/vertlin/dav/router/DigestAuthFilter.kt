@@ -49,7 +49,8 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
             return sendChallenge(ctx, true)
         }
 
-        val password = userService.findPassByName<String>(header.username)
+        val encodedUsername = Encoder.encode(header.username)
+        val password = userService.findPassByName<String>(encodedUsername)
         if (password.isEmpty()) return sendChallenge(ctx)
         val computedResponse = Utils.computedResponse(header, password)
         if (computedResponse == header.response) {

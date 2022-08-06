@@ -1,11 +1,10 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.eventbus.EventBus
-import io.vertx.core.json.JsonObject
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.InjectableService
-import kotlin.reflect.KClass
 
 /**
  * @author flutterdash@qq.com
@@ -24,9 +23,9 @@ abstract class EventbusApi : InjectableService {
      * `long`, `String`, `JsonObject`, `JsonArray`,
      * 如果你的回调的返回值不属于以上11种之一, 则需要考虑实现[EventbusDecoder]接口, 并注册对应类型的反序列化器
      */
-    protected fun <T : Any> api(
-        consumer: EventbusConsumer<T>
-    ): EventbusApiBuilder<T> {
+    protected fun api(
+        consumer: EventbusConsumer
+    ): EventbusApiBuilder {
         return EventbusApiBuilder(consumer)
     }
 
@@ -34,10 +33,13 @@ abstract class EventbusApi : InjectableService {
         return Json.decodeFromString(this)
     }
 
+    protected inline fun <reified T> encode(value: T): String {
+        return Json.encodeToString(value)
+    }
 
-    annotation class Accept(val value: KClass<*>)
+    annotation class Acc(val value: String)
 
 
-    annotation class Ret(val value: KClass<*>)
+    annotation class Ret(val value: String)
 
 }

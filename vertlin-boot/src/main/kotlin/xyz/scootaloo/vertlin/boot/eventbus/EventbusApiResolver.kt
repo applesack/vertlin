@@ -35,7 +35,7 @@ object EventbusApiResolver : ServiceResolver(EventbusApi::class) {
 
             if (fieldType.isSubclassOf(EventbusApiBuilder::class)) {
                 property.isAccessible = true
-                val builder = property.call(instance) as EventbusApiBuilder<*>
+                val builder = property.call(instance) as EventbusApiBuilder
                 val qualifiedAddress = qualifiedAddressByProperty(addressPrefix, property)
 
                 builder.address = qualifiedAddress

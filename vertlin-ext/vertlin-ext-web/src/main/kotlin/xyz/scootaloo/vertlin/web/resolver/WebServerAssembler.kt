@@ -6,6 +6,7 @@ import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.impl.logging.Logger
 import io.vertx.ext.web.Router
+import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.kotlin.core.http.httpServerOptionsOf
 import io.vertx.kotlin.coroutines.await
@@ -77,6 +78,13 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
 
         private fun bindReqRouters(vertx: Vertx): Router {
             val rootRouter = Router.router(vertx)
+            if (config.enableLog) {
+                rootRouter.route().handler {
+                    logRequest(it)
+                    it.next()
+                }
+            }
+
             rootRouter.route().handler(BodyHandler.create())
             if (httpRouters.isEmpty()) {
                 log.warn("http-server: 未找到任何请求处理器实现")
@@ -89,6 +97,15 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
                 rootRouter.route(router.mountPoint).subRouter(subRouter)
             }
 
+            if (config.prefix.isNotBlank()) {
+                val prefix = if (config.prefix.last() == '*')
+                    config.prefix
+                else
+                    config.prefix + "*"
+                val root = Router.router(vertx)
+                root.route(prefix).subRouter(rootRouter)
+                return root
+            }
             return rootRouter
         }
 
@@ -108,6 +125,19 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
             }
         }
 
+        private fun logRequest(ctx: RoutingContext) {
+            val request = ctx.request()
+            val remote = request.remoteAddress().hostAddress()
+            val method = request.method()
+            val uri = request.uri()
+            RequestRecorder.log.info("$remote $method $uri")
+        }
+
     }
+
+    object RequestRecorder {
+        val log = X.getLogger(this::class)
+    }
+
 
 }

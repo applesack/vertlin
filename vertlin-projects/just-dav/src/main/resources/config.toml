@@ -1,5 +1,6 @@
+
 [webdav]
-path = "src"
+path = "/home/twi/dev"
 
 [webdav.users]
 test = "123456"

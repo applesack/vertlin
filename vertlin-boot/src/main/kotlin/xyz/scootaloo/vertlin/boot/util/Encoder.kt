@@ -1,7 +1,6 @@
 package xyz.scootaloo.vertlin.boot.util
 
-import io.vertx.core.json.JsonArray
-import io.vertx.core.json.JsonObject
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
@@ -32,25 +31,12 @@ object Encoder {
         return String(base64decoder.decode(encoded))
     }
 
-    /**
-     * @return 原始类型, 字符串, JsonArray, JsonObject
-     */
-    fun simpleEncode2Json(value: Any): Any {
-        return when (value) {
-            is List<*> -> JsonArray(value)
-            is Array<*> -> JsonArray(value.toList())
-            is String -> Json.encodeToString(value)
-            is Boolean -> Json.encodeToString(value)
-            is Byte -> Json.encodeToString(value)
-            is Short -> Json.encodeToString(value)
-            is Int -> Json.encodeToString(value)
-            is Float -> Json.encodeToString(value)
-            is Double -> Json.encodeToString(value)
-            is Long -> value
-            else -> {
-                JsonObject.mapFrom(value)
-            }
-        }
+    inline fun <reified T> encode(value: T): String {
+        return Json.encodeToString(value)
+    }
+
+    inline fun <reified T> decode(value: String): T {
+        return Json.decodeFromString(value)
     }
 
     private fun bytes2hex(bytes: ByteArray): String {

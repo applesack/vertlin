@@ -12,11 +12,11 @@ class UserService : EventbusApi() {
 
     private val config by inject(WebDAV::class)
 
-    @Accept(String::class)
-    @Ret(String::class)
+    @Acc("String")
+    @Ret("String")
     val findPassByName = api {
         val username = it.asPojo<String>()
-        config.users[username] ?: ""
+        encode(config.users[username] ?: "")
     }
 
 }

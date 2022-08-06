@@ -239,9 +239,8 @@ class ApplicationRunner(val boot: BootManifest) {
         }
 
         fun displayFinishServiceResolve() {
-            // ServiceResolver: finished in
-            val time = stopWatch.stop(RESOLVE)
-            log.info("Service Resolver: resolve finished in $time second")
+            val time = (stopWatch.stop(RESOLVE) * 1000.0).toLong()
+            log.info("Service Resolver: resolve finished in $time ms")
         }
 
         fun displayFinishBootstrap() {

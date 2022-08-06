@@ -4,7 +4,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
-import xyz.scootaloo.vertlin.dav.domain.DepthHeader
 import xyz.scootaloo.vertlin.dav.domain.LockBlock
 
 /**
@@ -19,7 +18,7 @@ class LockManager : EventbusApi() {
     val lock = api {
         val lock = it.asPojo<LockBlock>()
         val lockDiscovery = getOrCreate(lock)
-        Json.encodeToString(lockDiscovery)
+        encode(lockDiscovery)
     }
 
     val refreshLock = api {
@@ -28,11 +27,14 @@ class LockManager : EventbusApi() {
     }
 
     val unlock = api {
+        encode("")
     }
 
+    @Acc("Pair<String, Int>")
+    @Ret("List<String>")
     val detect = api {
-        it.asPojo<Pair<Int, DepthHeader>>()
-        "[]"
+        it.asPojo<Pair<String, Int>>()
+        encode(emptyList<String>())
     }
 
     private fun getOrCreate(lock: LockBlock): LockDiscovery {

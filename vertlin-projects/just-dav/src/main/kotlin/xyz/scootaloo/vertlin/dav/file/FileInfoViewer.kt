@@ -44,7 +44,7 @@ object FileInfoViewer {
             return
         }
 
-        val pointAbsolutePathString = Path(point).absolutePathString()
+        val pointAbsolutePathString = absolute(point).absolutePathString()
         readDirectory(pointAbsolutePathString, receiver)
     }
 
