@@ -26,30 +26,41 @@ object FileInfoViewer {
     private val absolutePath: Path by lazy { Path(dav.path).toAbsolutePath() }
     private val absolutePathString: String by lazy { absolutePath.absolutePathString() }
 
-    suspend fun traverse(point: String, depth: Int, receiver: FileInfoReceiver) {
+    suspend fun traverse(
+        point: String, depth: Int, deniedSet: Set<String>
+    ): LinkedList<Pair<State, FileInfo>> {
+        val receiver = LinkedList<Pair<State, FileInfo>>()
         when (depth) {
-            0 -> traverse0(point, receiver)
-            1 -> traverse1(point, receiver)
-            else -> traverseInfinite(point, receiver)
+            0 -> traverse0(receiver, point, deniedSet)
+            1 -> traverse1(receiver, point, deniedSet)
+            else -> traverseInfinite(receiver, point, deniedSet)
         }
+        return receiver
     }
 
-    private suspend fun traverse0(point: String, receiver: FileInfoReceiver): Boolean {
-        return readFile(absolute(point).absolutePathString(), false, receiver)
+    private suspend fun traverse0(
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        point: String, deniedSet: Set<String>
+    ): Boolean {
+        return readFile(receiver, absolute(point).absolutePathString(), deniedSet)
     }
 
-    private suspend fun traverse1(point: String, receiver: FileInfoReceiver) {
-        if (!traverse0(point, receiver)) {
+    private suspend fun traverse1(
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        point: String, deniedSet: Set<String>
+    ) {
+        if (!traverse0(receiver, point, deniedSet)) {
             // 如果路径不存在或者访问终止, 则这里会直接短路
             return
         }
 
         val pointAbsolutePathString = absolute(point).absolutePathString()
-        readDirectory(pointAbsolutePathString, receiver)
+        readDirectory(receiver, pointAbsolutePathString, deniedSet)
     }
 
     private suspend fun traverseInfinite(
-        point: String, receiver: FileInfoReceiver
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        point: String, deniedSet: Set<String>
     ) {
         val candidates = LinkedList<String>()
         val pointAbsolutePathString = absolute(point).absolutePathString()
@@ -57,7 +68,7 @@ object FileInfoViewer {
 
         while (candidates.isNotEmpty()) {
             val next = candidates.removeFirst()
-            val contents = readDirectory(next, receiver)
+            val contents = readDirectory(receiver, next, deniedSet)
             if (contents.isNotEmpty()) {
                 candidates.addAll(contents)
             }
@@ -65,7 +76,8 @@ object FileInfoViewer {
     }
 
     private suspend fun readDirectory(
-        pointDirAbsolutePathString: String, receiver: FileInfoReceiver
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        pointDirAbsolutePathString: String, deniedSet: Set<String>
     ): List<String> {
         // 如果文件夹路径不存在, 则接受器不会被触发
         val dirContents = runCatching { fs.readDir(pointDirAbsolutePathString).await() }
@@ -77,11 +89,14 @@ object FileInfoViewer {
         for (pointAbsolutePathString in dirContents.getOrThrow()) {
             val props = runCatching { fs.props(pointAbsolutePathString).await() }
             if (props.isFailure) {
-                simpleErrorProcess(props, receiver, pointAbsolutePathString)
+                simpleErrorProcess(receiver, props, pointAbsolutePathString)
             }
 
             val info = fileInfo(pointAbsolutePathString, props.getOrThrow())
-            if (receiver.receive(State.OK, info) && props.getOrThrow().isDirectory) {
+            val state = if (info.path in deniedSet) State.FORBIDDEN else State.OK
+            receiver.add(state to info)
+
+            if (state == State.OK && info.isDirectory) {
                 reduced.add(pointAbsolutePathString)
             }
         }
@@ -89,43 +104,46 @@ object FileInfoViewer {
     }
 
     private suspend fun readFile(
-        pointAbsolutePathString: String, existsChecked: Boolean, receiver: FileInfoReceiver
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        pointAbsolutePathString: String, deniedSet: Set<String>
     ): Boolean {
-        if (!existsChecked) {
-            val exists = runCatching { fs.exists(pointAbsolutePathString).await() }
-            if (exists.isSuccess) {
-                if (!exists.getOrThrow()) {
-                    return simpleNotFoundProcess(receiver, pointAbsolutePathString)
-                }
-            } else {
-                return simpleErrorProcess(exists, receiver, pointAbsolutePathString)
+        val exists = runCatching { fs.exists(pointAbsolutePathString).await() }
+        if (exists.isSuccess) {
+            if (!exists.getOrThrow()) {
+                simpleNotFoundProcess(receiver, pointAbsolutePathString)
+                return false
             }
+        } else {
+            simpleErrorProcess(receiver, exists, pointAbsolutePathString)
+            return false
         }
 
         val props = runCatching { fs.props(pointAbsolutePathString).await() }
         if (props.isFailure) {
-            return simpleErrorProcess(props, receiver, pointAbsolutePathString)
+            simpleErrorProcess(receiver, props, pointAbsolutePathString)
+            return false
         }
 
         val info = fileInfo(pointAbsolutePathString, props.getOrThrow())
-        return receiver.receive(State.OK, info)
+        val state = if (info.path in deniedSet) State.FORBIDDEN else State.OK
+        receiver.add(state to info)
+        return state == State.OK
     }
 
     private fun simpleNotFoundProcess(
-        receiver: FileInfoReceiver, pointAbsolutePathString: String
-    ): Boolean {
+        receiver: LinkedList<Pair<State, FileInfo>>, pointAbsolutePathString: String
+    ) {
         val pathInfo = FilePathInfo(absolutePath, absolute(pointAbsolutePathString))
-        receiver.receive(State.NOT_FOUND, pathInfo)
-        return false
+        receiver.add(State.NOT_FOUND to pathInfo)
     }
 
     private fun simpleErrorProcess(
-        result: Result<Any>, receiver: FileInfoReceiver, pointAbsolutePathString: String
-    ): Boolean {
+        receiver: LinkedList<Pair<State, FileInfo>>,
+        result: Result<Any>, pointAbsolutePathString: String
+    ) {
         log.error("读取文件错误", result.exceptionOrNull())
         val pathInfo = FilePathInfo(absolutePath, absolute(pointAbsolutePathString))
-        receiver.receive(State.ERROR, pathInfo)
-        return false
+        receiver.add(State.ERROR to pathInfo)
     }
 
     private fun fileInfo(pointAbsolutePathString: String, props: FileProps): FileInfo {
@@ -135,12 +153,6 @@ object FileInfoViewer {
 
     private fun absolute(path: String): Path {
         return Path(absolutePathString, path).toAbsolutePath()
-    }
-
-    fun interface FileInfoReceiver {
-
-        fun receive(state: State, info: FileInfo): Boolean
-
     }
 
 }

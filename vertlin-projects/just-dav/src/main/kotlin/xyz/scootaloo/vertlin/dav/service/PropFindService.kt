@@ -50,30 +50,30 @@ object PropFindService {
     }
 
     private suspend fun buildResponse(block: PropFindBlock, deniedSet: List<String>): String {
+        val files = FileInfoViewer.traverse(block.target, block.depth.depth, deniedSet.toSet())
+        if (block.depth.noRoot && files.isNotEmpty()) {
+            files.removeFirst()
+        }
+
         val xml = DocumentHelper.createDocument()
         val namespace = Namespace("D", "DAV:")
         val root = xml.addElement(QName("multistatus", namespace))
-        FileInfoViewer.traverse(block.target, block.depth.depth) { state, info ->
-            buildResponseWithFileInfo(root, state, info, deniedSet)
+        for ((state, file) in files) {
+            buildResponseWithFileInfo(root, state, file)
         }
+
         return xml.asXML()
     }
 
     private fun buildResponseWithFileInfo(
-        root: Element, state: State, info: FileInfo, deniedSet: List<String>
-    ): Boolean {
-        if (info.path in deniedSet) {
-            buildErrorResponseInMultiStatus(root, StatusCode.forbidden, info)
-            return false
-        }
+        root: Element, state: State, info: FileInfo
+    ) {
         when (state) {
             State.OK -> buildOkResponseInMultiStatus(root, info)
-            State.FORBIDDEN -> {}
+            State.FORBIDDEN -> buildErrorResponseInMultiStatus(root, StatusCode.forbidden, info)
             State.NOT_FOUND -> buildErrorResponseInMultiStatus(root, StatusCode.notFound, info)
             State.ERROR -> buildErrorResponseInMultiStatus(root, StatusCode.internalError, info)
         }
-
-        return state == State.OK
     }
 
     private fun buildOkResponseInMultiStatus(root: Element, info: FileInfo) {
