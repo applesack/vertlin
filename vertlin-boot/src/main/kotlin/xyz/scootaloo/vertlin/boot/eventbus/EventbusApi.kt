@@ -37,9 +37,9 @@ abstract class EventbusApi : InjectableService {
         return Json.encodeToString(value)
     }
 
-    annotation class Acc(val value: String)
+    annotation class Acc(val value: String, val desc: String = "")
 
 
-    annotation class Ret(val value: String)
+    annotation class Ret(val value: String, val desc: String = "")
 
 }

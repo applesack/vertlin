@@ -31,11 +31,11 @@ class LockManager : EventbusApi() {
         encode("")
     }
 
-    @Acc("Triple<String, IfHeader?, Int>")
-    @Ret("List<String>")
+    @Acc("Triple<String, IfHeader?, Int>", desc = "目标点, if条件, 深度")
+    @Ret("Pair<String, List<String>>", desc = "该点是否允许访问, 指定深度范围内的所有存在锁的点")
     val detect = api {
         it.asPojo<Triple<String, IfHeader?, Int>>()
-        encode(emptyList<String>())
+        encode(Pair(true, emptyList<String>()))
     }
 
     private fun getOrCreate(lock: LockBlock): LockDiscovery {

@@ -2,34 +2,37 @@ package xyz.scootaloo.vertlin.dav.service
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.ext.web.RoutingContext
+import io.vertx.kotlin.coroutines.await
 import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.Namespace
 import org.dom4j.QName
-import xyz.scootaloo.vertlin.boot.internal.inject
-import xyz.scootaloo.vertlin.boot.util.Encoder
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.file.FileInfoViewer
 import xyz.scootaloo.vertlin.dav.file.State
-import xyz.scootaloo.vertlin.dav.lock.LockManager
 import xyz.scootaloo.vertlin.dav.util.DateUtils
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import xyz.scootaloo.vertlin.web.endWithXml
+import kotlin.io.path.absolutePathString
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/8/2 下午4:32
  */
-object PropFindService {
-
-    private val lockManager by inject(LockManager::class)
+object PropFindService : FileOperationService() {
 
     suspend fun propFind(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
-        val detectPoint = Encoder.encode(Triple(block.target, block.condition, block.depth.depth))
-        val deniedSet = lockManager.detect<List<String>>(detectPoint).toSet()
+        val deniedSet = detect(ctx, block, block.depth.depth)?.toSet() ?: return
+
+        if (!fs.exists(absolute(block.target).absolutePathString()).await()) {
+            ctx.response().statusCode = StatusCode.notFound
+            ctx.response().end()
+            return
+        }
+
         val xmlResponse = buildResponse(block, deniedSet)
 
         ctx.response().statusCode = StatusCode.multiStatus

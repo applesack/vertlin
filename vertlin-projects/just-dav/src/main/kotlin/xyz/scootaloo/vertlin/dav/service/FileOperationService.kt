@@ -1,8 +1,14 @@
 package xyz.scootaloo.vertlin.dav.service
 
 import io.vertx.core.file.FileSystem
+import io.vertx.ext.web.RoutingContext
 import xyz.scootaloo.vertlin.boot.internal.inject
+import xyz.scootaloo.vertlin.boot.util.Encoder
 import xyz.scootaloo.vertlin.dav.application.WebDAV
+import xyz.scootaloo.vertlin.dav.constant.StatusCode
+import xyz.scootaloo.vertlin.dav.domain.AccessBlock
+import xyz.scootaloo.vertlin.dav.domain.IfHeader
+import xyz.scootaloo.vertlin.dav.lock.LockManager
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
@@ -17,6 +23,25 @@ abstract class FileOperationService {
     protected val dav by inject(WebDAV::class)
     protected val absolutePath: Path by lazy { Path(dav.path).toAbsolutePath() }
     protected val absolutePathString: String by lazy { absolutePath.absolutePathString() }
+    private val lockManager by inject(LockManager::class)
+
+    protected suspend fun detect(ctx: RoutingContext, block: AccessBlock, depth: Int): List<String>? {
+        return detect(ctx, block.target, block.condition, depth)
+    }
+
+    protected suspend fun detect(
+        ctx: RoutingContext, path: String, condition: IfHeader?, depth: Int
+    ): List<String>? {
+        val params = Encoder.encode(Triple(path, condition, depth))
+        val (allow, deniedSet) = lockManager.detect<Pair<Boolean, List<String>>>(params)
+        if (!allow) {
+            ctx.response().statusCode = StatusCode.forbidden
+            ctx.end()
+            return null
+        }
+
+        return deniedSet
+    }
 
     protected fun absolute(path: String): Path {
         return Path(absolutePathString, path).toAbsolutePath()

@@ -3,12 +3,9 @@ package xyz.scootaloo.vertlin.dav.service
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.X
-import xyz.scootaloo.vertlin.boot.internal.inject
-import xyz.scootaloo.vertlin.boot.util.Encoder
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
-import xyz.scootaloo.vertlin.dav.lock.LockManager
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
@@ -21,8 +18,6 @@ object CollectionService : FileOperationService() {
 
     private val log = X.getLogger(this::class)
 
-    private val lockManager by inject(LockManager::class)
-
     suspend fun mkdir(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
 
@@ -33,8 +28,7 @@ object CollectionService : FileOperationService() {
         val parentFullPath = FileInfo.parent(targetFullPath, absolutePathString)
         val parentRelativePath = FileInfo.relative(absolutePath, Path(parentFullPath))
 
-        val detectPoint = Encoder.encode(Triple(parentRelativePath, block.condition, block.depth.depth))
-        val deniedSet = lockManager.detect<List<String>>(detectPoint).toSet()
+        val deniedSet = detect(ctx, parentRelativePath, block.condition, 1) ?: return
 
         val response = ctx.response()
         if (parentRelativePath in deniedSet || block.target in deniedSet) {

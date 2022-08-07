@@ -4,12 +4,9 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.X
-import xyz.scootaloo.vertlin.boot.internal.inject
-import xyz.scootaloo.vertlin.boot.util.Encoder
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
-import xyz.scootaloo.vertlin.dav.lock.LockManager
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
 import kotlin.io.path.absolutePathString
 
@@ -21,12 +18,9 @@ object UploadService : FileOperationService() {
 
     private val log = X.getLogger(this::class)
 
-    private val lockManager by inject(LockManager::class)
-
     suspend fun put(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
-        val detectPoint = Encoder.encode(Triple(block.target, block.condition, 1))
-        val deniedSet = lockManager.detect<List<String>>(detectPoint).toSet()
+        val deniedSet = detect(ctx, block, 1) ?: return
 
         val response = ctx.response()
         if (block.target in deniedSet) {

@@ -49,6 +49,10 @@ class WebDAVRouter : HttpRouterRegister("/*") {
             UploadService.put(it)
         }
 
+        delete {
+            DeleteService.delete(it)
+        }
+
     }
 
 }
