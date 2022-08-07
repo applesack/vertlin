@@ -65,6 +65,9 @@ interface FileInfo {
                     builder.append(ch)
                 }
             }
+            if (builder.length > 1 && builder.last() == '/') {
+                builder.setLength(builder.length - 1)
+            }
             return builder.toString()
         }
 

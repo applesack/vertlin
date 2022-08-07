@@ -18,6 +18,8 @@ object StatusCode {
 
     const val notFound = 404
 
+    const val methodNotAllowed = 405
+
     const val conflict = 409
 
     const val unsupportedMediaType = 415

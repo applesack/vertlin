@@ -25,7 +25,7 @@ object UploadService : FileOperationService() {
 
     suspend fun put(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
-        val detectPoint = Encoder.encode(Triple(block.target, block.condition, block.depth.depth))
+        val detectPoint = Encoder.encode(Triple(block.target, block.condition, 1))
         val deniedSet = lockManager.detect<List<String>>(detectPoint).toSet()
 
         val response = ctx.response()

@@ -2,10 +2,8 @@ package xyz.scootaloo.vertlin.dav.router
 
 import io.vertx.core.http.HttpMethod
 import io.vertx.ext.web.Router
-import io.vertx.ext.web.handler.StaticHandler
 import xyz.scootaloo.vertlin.dav.service.*
 import xyz.scootaloo.vertlin.web.HttpRouterRegister
-import java.net.http.HttpResponse.BodyHandler
 
 /**
  * @author flutterdash@qq.com
@@ -24,7 +22,7 @@ class WebDAVRouter : HttpRouterRegister("/*") {
         }
 
         method(HttpMethod.MKCOL) {
-
+            CollectionService.mkdir(it)
         }
 
         get {
