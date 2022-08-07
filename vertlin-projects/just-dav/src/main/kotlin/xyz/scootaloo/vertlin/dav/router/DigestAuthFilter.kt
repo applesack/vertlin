@@ -2,14 +2,18 @@ package xyz.scootaloo.vertlin.dav.router
 
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.impl.logging.Logger
+import io.vertx.ext.auth.User
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
+import io.vertx.kotlin.core.json.Json
+import io.vertx.kotlin.core.json.obj
 import xyz.scootaloo.vertlin.boot.Order
 import xyz.scootaloo.vertlin.boot.Ordered
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.currentTimeMillis
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.util.Encoder
+import xyz.scootaloo.vertlin.dav.constant.Constant
 import xyz.scootaloo.vertlin.dav.constant.ServerDefault
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.service.UserService
@@ -67,6 +71,9 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
 
         // 仅通过账号密码来确定登陆用户, 不记录用户的权限信息
         // 如果有, 则将获取用户权限的逻辑写在这里
+
+        val principal = Json.obj(Constant.USERNAME to header.username)
+        ctx.setUser(User.create(principal))
 
         ctx.next()
     }

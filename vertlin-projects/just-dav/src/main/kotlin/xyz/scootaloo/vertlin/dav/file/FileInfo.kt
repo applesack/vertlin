@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.dav.file
 
 import io.vertx.core.http.impl.MimeMapping
+import java.io.File
 import java.nio.file.Path
 
 /**
@@ -39,6 +40,10 @@ interface FileInfo {
             return path.substring(separatorIdx + 1)
         }
 
+        fun parent(absolute: String, base: String): String {
+            return File(absolute).parent ?: base
+        }
+
         fun mimeTypeOf(filename: String): String {
             return (if (filename.lastIndexOf('.') > 0) {
                 MimeMapping.getMimeTypeForFilename(filename)
@@ -47,7 +52,7 @@ interface FileInfo {
             }) ?: MimeMapping.getMimeTypeForExtension("bin")!!
         }
 
-        private fun normalize(path: String): String {
+        fun normalize(path: String): String {
             val size = if (path.startsWith('/')) path.length else path.length + 1
             val builder = StringBuilder(size)
             if (!path.startsWith('/')) {

@@ -6,18 +6,14 @@ import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.Namespace
 import org.dom4j.QName
-import xyz.scootaloo.vertlin.boot.core.awaitParallelBlocking
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.util.Encoder
-import xyz.scootaloo.vertlin.dav.constant.HttpHeaders
-import xyz.scootaloo.vertlin.dav.constant.ServerDefault
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
-import xyz.scootaloo.vertlin.dav.domain.PropFindBlock
+import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.file.FileInfoViewer
 import xyz.scootaloo.vertlin.dav.file.State
 import xyz.scootaloo.vertlin.dav.lock.LockManager
-import xyz.scootaloo.vertlin.dav.parse.header.DepthHeaderParser
 import xyz.scootaloo.vertlin.dav.util.DateUtils
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import xyz.scootaloo.vertlin.web.endWithXml
@@ -31,26 +27,17 @@ object PropFindService {
     private val lockManager by inject(LockManager::class)
 
     suspend fun propFind(ctx: RoutingContext) {
-        val block = parseRequestContent(ctx)
-        val detectPoint = Encoder.encode(Pair(block.target, block.depth.depth))
-        val deniedSet = lockManager.detect<List<String>>(detectPoint)
+        val block = AccessBlock.of(ctx)
+        val detectPoint = Encoder.encode(Triple(block.target, block.condition, block.depth.depth))
+        val deniedSet = lockManager.detect<List<String>>(detectPoint).toSet()
         val xmlResponse = buildResponse(block, deniedSet)
 
         ctx.response().statusCode = StatusCode.multiStatus
         ctx.endWithXml(xmlResponse)
     }
 
-    private suspend fun parseRequestContent(ctx: RoutingContext): PropFindBlock {
-        return awaitParallelBlocking {
-            val headers = ctx.request().headers()
-            val target = ctx.pathParam("*") ?: "/"
-            val depth = DepthHeaderParser.parseDepth(headers.get(HttpHeaders.DEPTH)) ?: ServerDefault.depth
-            PropFindBlock(target, depth)
-        }
-    }
-
-    private suspend fun buildResponse(block: PropFindBlock, deniedSet: List<String>): String {
-        val files = FileInfoViewer.traverse(block.target, block.depth.depth, deniedSet.toSet())
+    private suspend fun buildResponse(block: AccessBlock, deniedSet: Set<String>): String {
+        val files = FileInfoViewer.traverse(block.target, block.depth.depth, deniedSet)
         if (block.depth.noRoot && files.isNotEmpty()) {
             files.removeFirst()
         }

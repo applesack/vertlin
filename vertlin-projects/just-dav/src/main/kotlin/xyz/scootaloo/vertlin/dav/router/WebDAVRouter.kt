@@ -3,10 +3,7 @@ package xyz.scootaloo.vertlin.dav.router
 import io.vertx.core.http.HttpMethod
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.StaticHandler
-import xyz.scootaloo.vertlin.dav.service.LockService
-import xyz.scootaloo.vertlin.dav.service.OptionsService
-import xyz.scootaloo.vertlin.dav.service.PropFindService
-import xyz.scootaloo.vertlin.dav.service.StaticService
+import xyz.scootaloo.vertlin.dav.service.*
 import xyz.scootaloo.vertlin.web.HttpRouterRegister
 import java.net.http.HttpResponse.BodyHandler
 
@@ -51,7 +48,7 @@ class WebDAVRouter : HttpRouterRegister("/*") {
         }
 
         put {
-
+            UploadService.put(it)
         }
 
     }

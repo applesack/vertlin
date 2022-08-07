@@ -4,6 +4,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
+import xyz.scootaloo.vertlin.dav.domain.IfHeader
 import xyz.scootaloo.vertlin.dav.domain.LockBlock
 
 /**
@@ -30,10 +31,10 @@ class LockManager : EventbusApi() {
         encode("")
     }
 
-    @Acc("Pair<String, Int>")
+    @Acc("Triple<String, IfHeader?, Int>")
     @Ret("List<String>")
     val detect = api {
-        it.asPojo<Pair<String, Int>>()
+        it.asPojo<Triple<String, IfHeader?, Int>>()
         encode(emptyList<String>())
     }
 

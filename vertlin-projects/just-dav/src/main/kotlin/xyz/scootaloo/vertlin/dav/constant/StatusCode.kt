@@ -6,6 +6,8 @@ package xyz.scootaloo.vertlin.dav.constant
  */
 object StatusCode {
 
+    const val created = 201
+
     const val multiStatus = 207
 
     const val badRequest = 400
@@ -15,6 +17,10 @@ object StatusCode {
     const val forbidden = 403
 
     const val notFound = 404
+
+    const val conflict = 409
+
+    const val unsupportedMediaType = 415
 
     const val internalError = 500
 

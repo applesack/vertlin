@@ -8,4 +8,6 @@ internal object Constant {
 
     const val UNKNOWN = "unknown"
 
+    const val USERNAME = "username"
+
 }

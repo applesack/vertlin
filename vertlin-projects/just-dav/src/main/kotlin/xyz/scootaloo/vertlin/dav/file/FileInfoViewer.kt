@@ -1,14 +1,11 @@
 package xyz.scootaloo.vertlin.dav.file
 
 import io.vertx.core.file.FileProps
-import io.vertx.core.file.FileSystem
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.X
-import xyz.scootaloo.vertlin.boot.internal.inject
-import xyz.scootaloo.vertlin.dav.application.WebDAV
 import xyz.scootaloo.vertlin.dav.file.impl.FileInfoImpl
 import xyz.scootaloo.vertlin.dav.file.impl.FilePathInfo
-import java.nio.file.Path
+import xyz.scootaloo.vertlin.dav.service.FileOperationService
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
@@ -17,14 +14,9 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/3 下午11:13
  */
-object FileInfoViewer {
+object FileInfoViewer : FileOperationService() {
 
     private val log = X.getLogger(this::class)
-
-    private val fs by inject(FileSystem::class)
-    private val dav by inject(WebDAV::class)
-    private val absolutePath: Path by lazy { Path(dav.path).toAbsolutePath() }
-    private val absolutePathString: String by lazy { absolutePath.absolutePathString() }
 
     suspend fun traverse(
         point: String, depth: Int, deniedSet: Set<String>
@@ -149,10 +141,6 @@ object FileInfoViewer {
     private fun fileInfo(pointAbsolutePathString: String, props: FileProps): FileInfo {
         val pointAbsolutePath = Path(pointAbsolutePathString).toAbsolutePath()
         return FileInfoImpl(absolutePath, pointAbsolutePath, props)
-    }
-
-    private fun absolute(path: String): Path {
-        return Path(absolutePathString, path).toAbsolutePath()
     }
 
 }
