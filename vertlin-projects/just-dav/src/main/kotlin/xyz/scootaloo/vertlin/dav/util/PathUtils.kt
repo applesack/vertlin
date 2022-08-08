@@ -9,12 +9,21 @@ import java.net.URLEncoder
  */
 object PathUtils {
 
-    fun decodeUriComponent(uri: String): String {
-        return URIDecoder.decodeURIComponent(uri)
+    /**
+     * '+' -> ' '
+     * '%2B' -> '+'
+     */
+    fun decodeUriComponent(uri: String, plus: Boolean = true): String {
+        return URIDecoder.decodeURIComponent(uri, plus)
     }
 
+    /**
+     * ' ' -> '+'
+     * '+' -> '%2B'
+     */
     fun encodeUriComponent(uri: String): String {
-        return URLEncoder.encode(uri, "UTF-8").replace("%2F", "/")
+        return URLEncoder.encode(uri, "UTF-8")
+            .replace("%2F", "/")
     }
 
 }

@@ -29,4 +29,28 @@ class PathTest : TestDSL {
         decoded.log()
     }
 
+    @Test
+    fun testPathUriEncode() {
+        val text1 = "你好世界.txt"
+        text1 shouldBe PathUtils.decodeUriComponent(PathUtils.encodeUriComponent(text1))
+
+        val text2 = "你好 世界.txt"
+        text2 shouldBe PathUtils.decodeUriComponent(PathUtils.encodeUriComponent(text2))
+
+        val text3 = "你好+世界.txt"
+        text3 shouldBe PathUtils.decodeUriComponent(PathUtils.encodeUriComponent(text3))
+
+        val text4 = "笔记 2022年8月7日 14_40_25.txt"
+        text4 shouldBe PathUtils.decodeUriComponent(PathUtils.encodeUriComponent(text4))
+
+        val text5 = "/%E7%AC%94%E8%AE%B0+2022%E5%B9%B48%E6%9C%887%E6%97%A5+14_40_25.txt"
+        PathUtils.decodeUriComponent(text5).log()
+
+        val text6 = " +"
+        PathUtils.encodeUriComponent(text6).log()
+
+        val text7 = " %2b"
+        PathUtils.decodeUriComponent(text7).log()
+    }
+
 }

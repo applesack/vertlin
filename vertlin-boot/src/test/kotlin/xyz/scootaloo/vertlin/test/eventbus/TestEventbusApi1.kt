@@ -24,7 +24,7 @@ class TestEventbusApi1 : BootManifest() {
     fun test(): Unit = runBlocking {
         runApplication(arrayOf()).await()
         log.info("before call")
-        log.info("after call: " + testApi.hello())
+        log.info("after call: " + testApi.hello(""))
     }
 
     override fun services(): Collection<KClass<out Service>> {
