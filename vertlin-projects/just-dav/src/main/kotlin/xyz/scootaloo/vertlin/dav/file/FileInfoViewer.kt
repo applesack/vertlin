@@ -85,7 +85,7 @@ object FileInfoViewer : FileOperationService() {
             }
 
             val info = fileInfo(pointAbsolutePathString, props.getOrThrow())
-            val state = if (info.path in deniedSet) State.FORBIDDEN else State.OK
+            val state = if (info.path in deniedSet) State.LOCKED else State.OK
             receiver.add(state to info)
 
             if (state == State.OK && info.isDirectory) {
@@ -117,7 +117,7 @@ object FileInfoViewer : FileOperationService() {
         }
 
         val info = fileInfo(pointAbsolutePathString, props.getOrThrow())
-        val state = if (info.path in deniedSet) State.FORBIDDEN else State.OK
+        val state = if (info.path in deniedSet) State.LOCKED else State.OK
         receiver.add(state to info)
         return state == State.OK
     }

@@ -1,7 +1,5 @@
 package xyz.scootaloo.vertlin.dav.lock
 
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import xyz.scootaloo.vertlin.boot.Context
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
 import xyz.scootaloo.vertlin.dav.domain.IfHeader
@@ -31,6 +29,10 @@ class LockManager : EventbusApi() {
         encode("")
     }
 
+    /**
+     * 只处理深度为1或者无限的情况
+     * 如果入参目标点被锁且无法解锁, 则返回元组中第一个值永远为false
+     */
     @Acc("Triple<String, IfHeader?, Int>", desc = "目标点, if条件, 深度")
     @Ret("Pair<String, List<String>>", desc = "该点是否允许访问, 指定深度范围内的所有存在锁的点")
     val detect = api {

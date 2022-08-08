@@ -8,6 +8,7 @@ import xyz.scootaloo.vertlin.dav.application.WebDAV
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.domain.IfHeader
+import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.lock.LockManager
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -45,6 +46,10 @@ abstract class FileOperationService {
 
     protected fun absolute(path: String): Path {
         return Path(absolutePathString, path).toAbsolutePath()
+    }
+
+    protected fun relative(absolute: String): String {
+        return FileInfo.relative(absolutePath, Path(absolute))
     }
 
 }

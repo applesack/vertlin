@@ -60,7 +60,7 @@ object PropFindService : FileOperationService() {
     ) {
         when (state) {
             State.OK -> buildOkResponseInMultiStatus(root, info)
-            State.FORBIDDEN -> buildErrorResponseInMultiStatus(root, StatusCode.forbidden, info)
+            State.LOCKED -> buildErrorResponseInMultiStatus(root, StatusCode.locked, info)
             State.NOT_FOUND -> buildErrorResponseInMultiStatus(root, StatusCode.notFound, info)
             State.ERROR -> buildErrorResponseInMultiStatus(root, StatusCode.internalError, info)
         }

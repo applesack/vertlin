@@ -7,6 +7,7 @@ import xyz.scootaloo.vertlin.dav.constant.ServerDefault
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.parse.header.DepthHeaderParser
 import xyz.scootaloo.vertlin.dav.parse.header.IfHeaderParser
+import xyz.scootaloo.vertlin.dav.util.PathUtils
 
 /**
  * @author flutterdash@qq.com
@@ -31,7 +32,8 @@ data class AccessBlock(
     companion object {
         fun of(ctx: RoutingContext, defTargetPath: String = "/"): AccessBlock {
             val headers = ctx.request().headers()
-            val target = FileInfo.normalize(ctx.pathParam("*") ?: defTargetPath)
+            val targetParam = ctx.pathParam("*") ?: defTargetPath
+            val target = FileInfo.normalize(PathUtils.decodeUriComponent(targetParam))
             val condition = IfHeaderParser.parseIfCondition(headers.get(HttpHeaders.IF))
             val depth = DepthHeaderParser.parseDepth(headers.get(HttpHeaders.DEPTH)) ?: ServerDefault.depth
             return AccessBlock(target, condition, depth)

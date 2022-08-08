@@ -8,6 +8,8 @@ object StatusCode {
 
     const val created = 201
 
+    const val noContent = 204
+
     const val multiStatus = 207
 
     const val badRequest = 400
@@ -23,6 +25,8 @@ object StatusCode {
     const val conflict = 409
 
     const val unsupportedMediaType = 415
+
+    const val locked = 423
 
     const val internalError = 500
 
