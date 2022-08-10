@@ -24,6 +24,8 @@ object StatusCode {
 
     const val conflict = 409
 
+    const val preconditionFailed = 412
+
     const val unsupportedMediaType = 415
 
     const val locked = 423

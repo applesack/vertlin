@@ -1,16 +1,14 @@
 package xyz.scootaloo.vertlin.dav.service
 
-import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
-import org.dom4j.DocumentHelper
-import org.dom4j.Namespace
-import org.dom4j.QName
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
+import xyz.scootaloo.vertlin.dav.domain.DepthHeader
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
-import xyz.scootaloo.vertlin.dav.util.PathUtils
+import xyz.scootaloo.vertlin.dav.util.MultiStatus
+import xyz.scootaloo.vertlin.dav.util.MultiStatus.Reason
 import xyz.scootaloo.vertlin.web.endWithXml
 import java.io.File
 import java.util.*
@@ -28,7 +26,7 @@ object DeleteService : FileOperationService() {
         val block = AccessBlock.of(ctx)
 
         // 忽略请求头中的 Depth 属性, 任意delete请求的深度都视为infinite; 9.6.1
-        val deniedSet = detect(ctx, block, 2) ?: return
+        val deniedSet = detect(ctx, block, DepthHeader.infinite) ?: return
 
         val targetAbsolutePath = absolute(block.target).absolutePathString()
         if (!fs.exists(targetAbsolutePath).await()) {
@@ -139,35 +137,9 @@ object DeleteService : FileOperationService() {
             return
         }
 
-        val xml = DocumentHelper.createDocument()
-        val namespace = Namespace("D", "DAV:")
-        val root = xml.addElement(QName(MultiStatus.multiStatus, namespace))
-
-        for ((reason, path) in results) {
-            val resp = root.addElement(QName(MultiStatus.response, namespace))
-
-            val href = resp.addElement(QName(MultiStatus.href, namespace))
-            href.addText(PathUtils.encodeUriComponent(path))
-
-            val status = resp.addElement(QName(MultiStatus.status, namespace))
-            when (reason) {
-                Reason.LOCKED -> {
-                    status.addText(statusOf(StatusCode.locked))
-                    val error = resp.addElement(QName(MultiStatus.error, namespace))
-                    error.addElement(QName(MultiStatus.lockTokenSubmitted, namespace))
-                }
-
-                Reason.INTERNAL_ERROR -> status.addText(statusOf(StatusCode.internalError))
-            }
-        }
-
+        val xml = MultiStatus.buildResponses(results)
         response.statusCode = StatusCode.multiStatus
-        ctx.endWithXml(xml.asXML())
-    }
-
-    private fun statusOf(code: Int, version: String = "HTTP/1.1"): String {
-        val details = HttpResponseStatus.valueOf(code)
-        return "$version $code ${details.reasonPhrase()}"
+        ctx.endWithXml(xml)
     }
 
     private val separator by lazy { File.separatorChar }
@@ -186,18 +158,5 @@ object DeleteService : FileOperationService() {
         val absolutePath: String,
         val node: Node
     )
-
-    private enum class Reason {
-        LOCKED, INTERNAL_ERROR
-    }
-
-    private object MultiStatus {
-        const val multiStatus = "multistatus"
-        const val response = "response"
-        const val href = "href"
-        const val status = "status"
-        const val error = "error"
-        const val lockTokenSubmitted = "lock-token-submitted"
-    }
 
 }

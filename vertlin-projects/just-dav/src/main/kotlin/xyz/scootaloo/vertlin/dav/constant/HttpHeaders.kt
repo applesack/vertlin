@@ -7,7 +7,13 @@ package xyz.scootaloo.vertlin.dav.constant
 object HttpHeaders {
 
     const val DEPTH = "Depth"
+
     const val IF = "If"
+
     const val TIMEOUT = "Timeout"
+
+    const val OVERWRITE = "Overwrite"
+
+    const val DESTINATION = "Destination"
 
 }

@@ -43,12 +43,13 @@ data class AccessBlock(
             // 导致实际路径和通过[ctx.pathParam]获取到的值不一致
 
             // 路径加密使用算法见 [PathUtils]
-            // 处理方案: 在执行路径解码时, 将'+'替换为空格
+            // 处理方案: 由于这个项目提取路径参数主要是取后缀, 所以使用手动获取uri并解密代替 [ctx.pathParam]
 
             val target = FileInfo.normalize(decodeUriComponent(ctx, defTargetPath))
 
             val condition = IfHeaderParser.parseIfCondition(headers.get(HttpHeaders.IF))
             val depth = DepthHeaderParser.parseDepth(headers.get(HttpHeaders.DEPTH)) ?: ServerDefault.depth
+
             return AccessBlock(target, condition, depth)
         }
 
@@ -56,6 +57,8 @@ data class AccessBlock(
             val rawUri = ctx.request().uri()
             if (rawUri.isEmpty()) return def
             val uriComponent = rawUri.substring(server.prefix.length)
+            if (uriComponent == def)
+                return def
             return PathUtils.decodeUriComponent(uriComponent)
         }
 

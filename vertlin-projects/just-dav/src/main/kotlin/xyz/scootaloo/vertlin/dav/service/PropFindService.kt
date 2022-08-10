@@ -1,6 +1,5 @@
 package xyz.scootaloo.vertlin.dav.service
 
-import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
 import org.dom4j.DocumentHelper
@@ -70,7 +69,7 @@ object PropFindService : FileOperationService() {
         val (propStat, namespace) = renderFileHref(root, info)
 
         val status = propStat.addElement(QName(MultiStatus.status))
-        status.addText(statusOf(200))
+        status.addText(xyz.scootaloo.vertlin.dav.util.MultiStatus.statusOf(200))
 
         val prop = propStat.addElement(QName(MultiStatus.prop, namespace))
 
@@ -101,7 +100,7 @@ object PropFindService : FileOperationService() {
     private fun buildErrorResponseInMultiStatus(root: Element, code: Int, info: FileInfo) {
         val (propStat, namespace) = renderFileHref(root, info)
         val status = propStat.addElement(QName(MultiStatus.status, namespace))
-        status.addText(statusOf(code))
+        status.addText(xyz.scootaloo.vertlin.dav.util.MultiStatus.statusOf(code))
 
         val respText = when (code) {
             403 -> "Forbidden"
@@ -122,11 +121,6 @@ object PropFindService : FileOperationService() {
         href.addText(PathUtils.encodeUriComponent(info.path))
 
         return propStat to namespace
-    }
-
-    private fun statusOf(code: Int, version: String = "HTTP/1.1"): String {
-        val details = HttpResponseStatus.valueOf(code)
-        return "$version $code ${details.reasonPhrase()}"
     }
 
     private object MultiStatus {

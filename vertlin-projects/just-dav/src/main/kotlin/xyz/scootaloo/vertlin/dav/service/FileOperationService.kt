@@ -52,4 +52,11 @@ abstract class FileOperationService {
         return FileInfo.relative(absolutePath, Path(absolute))
     }
 
+    protected fun concatPath(a: String, b: String): String {
+        val trimA = a.trim('/')
+        val trimB = b.trim('/')
+        val result = "$trimA/$trimB"
+        return FileInfo.normalize(result)
+    }
+
 }

@@ -53,6 +53,10 @@ class WebDAVRouter : HttpRouterRegister("/*") {
             DeleteService.delete(it)
         }
 
+        method(HttpMethod.COPY) {
+            CopyService.copy(it)
+        }
+
     }
 
 }

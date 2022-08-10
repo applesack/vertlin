@@ -10,7 +10,11 @@ import kotlinx.serialization.Serializable
 data class DepthHeader(
     val depth: Int,
     val noRoot: Boolean
-)
+) {
+    companion object {
+        const val infinite = 2
+    }
+}
 
 
 @Serializable
