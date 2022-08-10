@@ -2,6 +2,7 @@ package xyz.scootaloo.vertlin.dav.util
 
 import io.vertx.core.file.FileProps
 import io.vertx.kotlin.coroutines.await
+import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.service.FileOperationService
 import java.util.LinkedList
 import kotlin.io.path.absolutePathString
@@ -15,7 +16,7 @@ object FileDifference : FileOperationService() {
     /**
      * 构建源路径和目的路径的交集
      *
-     * 前置条件
+     * 前置条件:
      * 1. 源路径必须经过检查(必须是存在的)
      * 2. 源路径必须和目的路径必须是文件夹
      */
@@ -24,10 +25,13 @@ object FileDifference : FileOperationService() {
         val destAbsolutePath = absolute(param.destination).absolutePathString()
 
         val root = Node(false, Status.PLACEHOLDER)
-        skipSet.forEach { insert(root, it, Status.SKIP, true) }
+        skipSet.forEach { insert(root, param.source, it, Status.SKIP, true) }
 
-        param.sourceDeniedSet.forEach { insert(root, it, Status.LOCKED, true) }
-        param.destinationDeniedSet.forEach { insert(root, it, Status.LOCKED, false) }
+        // todo 锁集和skip集需要对齐到源目录后处理
+        param.sourceDeniedSet.forEach { insert(root, param.source, it, Status.LOCKED, true) }
+        param.destinationDeniedSet.forEach {
+            insert(root, param.destination, it, Status.LOCKED, false)
+        }
 
         if (!fs.exists(destAbsolutePath).await()) {
             return root
@@ -84,7 +88,11 @@ object FileDifference : FileOperationService() {
         }
     }
 
-    private fun insert(receiver: Node, path: String, status: Status, isSource: Boolean) {
+    private fun insert(
+        receiver: Node, prefix: String, subPath: String,
+        status: Status, isSource: Boolean
+    ) {
+        val path = subPath.substring(FileInfo.normalize(prefix).length + 1)
         val items = path.split('/')
         var current = receiver
         for (item in items) {

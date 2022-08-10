@@ -32,6 +32,15 @@ object CopyService : FileOperationService() {
 
     private val log = X.getLogger(this::class)
 
+    /**
+     * webdav copy
+     *
+     * 测试项目:
+     * 1. 将源路径(文件)复制到目的路径(目录)
+     * 2. 将源路径(目录)复制到目的路径(目录), 递归或者非递归
+     * 3. 将源路径(目录)复制到源路径的子集
+     * 4. 在源路径或目的路径存在锁的情况下复制
+     */
     suspend fun copy(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
 
@@ -113,8 +122,10 @@ object CopyService : FileOperationService() {
 
         // 如果目的路径是源路径的一个子集, 则将来源路径拷贝到目标路径会导致无限递归
         // 按照协议原则(尽可能多地完成复制操作), 将目标路径在复制时跳过
+        // todo 如果情况相反, 源路径是目的路径的子集, 应该如何处理?
         val skipSet = HashSet<String>()
-        if (param.destination.startsWith(param.source)) {
+        // TIPS#1: /test是/test1的前缀, 但是/test1不是/test的子集, 它们共享同一个父路径
+        if (param.destination.startsWith(param.source + "/")) {
             skipSet.add(param.destination)
         }
 
@@ -218,6 +229,21 @@ object CopyService : FileOperationService() {
         results: LinkedList<Pair<Reason, String>>, param: DiffParam, intersection: Node,
         sourceAbsolutePath: String, destAbsolutePath: String
     ): List<Pair<Reason, String>> {
+
+        // @TIPS#1: 考虑下面这种情况
+        // 从/test 拷贝到/test/a/test, /test/a存在, 但是/test/a/test不存在
+        // 这种情况是允许执行复制操作的, 所以需要先创建出/test/a/test
+
+        if (!fs.exists(destAbsolutePath).await()) {
+            val result = runCatching { fs.copy(sourceAbsolutePath, destAbsolutePath).await() }
+            if (result.isFailure) {
+                // 创建文件夹失败
+                logCopyFailure(destAbsolutePath, result.exceptionOrNull())
+                results.add(Reason.INTERNAL_ERROR to param.destination)
+                return results
+            }
+        }
+
         val deque = LinkedList<Triple<Node, String, String>>()
         deque.add(Triple(intersection, sourceAbsolutePath, destAbsolutePath))
 
@@ -229,7 +255,7 @@ object CopyService : FileOperationService() {
                 val filename = PathUtils.filename(member)
                 if (filename in node) {
 
-                    val problem = node[member]!!
+                    val problem = node[filename]!!
                     when (problem.status) {
                         LOCKED -> recordingFailedOperation(results, member, Reason.LOCKED)
                         SKIP -> recordingFailedOperation(results, member, Reason.CONFLICT)
