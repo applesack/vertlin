@@ -3,7 +3,6 @@ package xyz.scootaloo.vertlin.dav.util
 import io.vertx.core.file.FileProps
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.dav.file.FileInfo
-import xyz.scootaloo.vertlin.dav.service.FileOperationService
 import java.util.LinkedList
 import kotlin.io.path.absolutePathString
 
@@ -11,7 +10,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/8 下午11:26
  */
-object FileDifference : FileOperationService() {
+object FileDifference : FileOperations() {
 
     /**
      * 构建源路径和目的路径的交集
@@ -27,7 +26,6 @@ object FileDifference : FileOperationService() {
         val root = Node(false, Status.PLACEHOLDER)
         skipSet.forEach { insert(root, param.source, it, Status.SKIP, true) }
 
-        // todo 锁集和skip集需要对齐到源目录后处理
         param.sourceDeniedSet.forEach { insert(root, param.source, it, Status.LOCKED, true) }
         param.destinationDeniedSet.forEach {
             insert(root, param.destination, it, Status.LOCKED, false)

@@ -57,6 +57,10 @@ class WebDAVRouter : HttpRouterRegister("/*") {
             CopyService.copy(it)
         }
 
+        method(HttpMethod.MOVE) {
+            MoveService.move(it)
+        }
+
     }
 
 }

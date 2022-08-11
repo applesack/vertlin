@@ -12,6 +12,7 @@ import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.file.FileInfoViewer
 import xyz.scootaloo.vertlin.dav.file.State
 import xyz.scootaloo.vertlin.dav.util.DateUtils
+import xyz.scootaloo.vertlin.dav.util.FileOperations
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import xyz.scootaloo.vertlin.web.endWithXml
 import kotlin.io.path.absolutePathString
@@ -20,7 +21,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/2 下午4:32
  */
-object PropFindService : FileOperationService() {
+object PropFindService : FileOperations() {
 
     suspend fun propFind(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)

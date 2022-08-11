@@ -8,13 +8,14 @@ import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
+import xyz.scootaloo.vertlin.dav.util.FileOperations
 import kotlin.io.path.absolutePathString
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/8/7 上午11:09
  */
-object UploadService : FileOperationService() {
+object UploadService : FileOperations() {
 
     private val log = X.getLogger(this::class)
 

@@ -7,6 +7,7 @@ import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
+import xyz.scootaloo.vertlin.dav.util.FileOperations
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
 
@@ -14,7 +15,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/7 下午3:15
  */
-object CollectionService : FileOperationService() {
+object CollectionService : FileOperations() {
 
     private val log = X.getLogger(this::class)
 

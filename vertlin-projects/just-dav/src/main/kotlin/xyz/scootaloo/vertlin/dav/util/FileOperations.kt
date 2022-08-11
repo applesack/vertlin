@@ -1,4 +1,4 @@
-package xyz.scootaloo.vertlin.dav.service
+package xyz.scootaloo.vertlin.dav.util
 
 import io.vertx.core.file.FileSystem
 import io.vertx.ext.web.RoutingContext
@@ -18,7 +18,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/7 下午1:53
  */
-abstract class FileOperationService {
+abstract class FileOperations {
 
     protected val fs by inject(FileSystem::class)
     protected val dav by inject(WebDAV::class)

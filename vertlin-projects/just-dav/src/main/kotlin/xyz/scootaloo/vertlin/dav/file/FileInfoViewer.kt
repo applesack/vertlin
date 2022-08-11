@@ -5,7 +5,7 @@ import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.dav.file.impl.FileInfoImpl
 import xyz.scootaloo.vertlin.dav.file.impl.FilePathInfo
-import xyz.scootaloo.vertlin.dav.service.FileOperationService
+import xyz.scootaloo.vertlin.dav.util.FileOperations
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
@@ -14,7 +14,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/3 下午11:13
  */
-object FileInfoViewer : FileOperationService() {
+object FileInfoViewer : FileOperations() {
 
     private val log = X.getLogger(this::class)
 

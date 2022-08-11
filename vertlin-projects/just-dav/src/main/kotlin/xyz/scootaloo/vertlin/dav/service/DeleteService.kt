@@ -7,6 +7,7 @@ import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.domain.DepthHeader
 import xyz.scootaloo.vertlin.dav.util.ContextUtils
+import xyz.scootaloo.vertlin.dav.util.FileOperations
 import xyz.scootaloo.vertlin.dav.util.MultiStatus
 import xyz.scootaloo.vertlin.dav.util.MultiStatus.Reason
 import xyz.scootaloo.vertlin.web.endWithXml
@@ -18,7 +19,7 @@ import kotlin.io.path.absolutePathString
  * @author flutterdash@qq.com
  * @since 2022/8/7 下午3:50
  */
-object DeleteService : FileOperationService() {
+object DeleteService : FileOperations() {
 
     private val log = X.getLogger(this::class)
 
@@ -142,7 +143,7 @@ object DeleteService : FileOperationService() {
         ctx.endWithXml(xml)
     }
 
-    private val separator by lazy { File.separatorChar }
+    private val separator = File.separatorChar
     private fun filenameFromAbsolutePath(absolute: String): String {
         val idx = absolute.lastIndexOf(separator)
         if (idx < 0 || absolute.length - 1 == idx) return ""
