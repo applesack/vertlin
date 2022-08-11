@@ -10,18 +10,20 @@ import xyz.scootaloo.vertlin.web.HttpRouterRegister
  * @since 2022/8/1 上午9:43
  */
 @Order(Ordered.HIGHEST)
-class HelloHttpRouter : HttpRouterRegister("/*") { // 拦截器
+class HelloHttpRouter : HttpRouterRegister("/*") {
 
     override fun register(router: Router) = router.run {
-        any {
-            val auth = it.request().getHeader("")
-            it.fail(403)
+        get("/:name") {
+            val name = it.pathParam("name")
+            it.end("hello $name")
         }
-        router.route().handler {
 
+        post {
+            // 在此编写controller代码
         }
-        get("/*") {
-            it.end("hello world")
+
+        delete {
+            // 在此编写controller代码
         }
     }
 

@@ -1,6 +1,6 @@
 ## vertlin
 
-用于快速开发`vertx`应用的脚手架, `springboot like`
+用于快速开发`vert.x`应用的脚手架, `springboot like`
 
 快速启动, 线程模型,`profile`, `eventbus`, 自动注入, 定时任务, 本地缓存
 
@@ -45,6 +45,8 @@ vertx.deployVerticle(MainVerticle())
 > 得益于`kotlin`协程, 可以用同步的写法去写异步代码, 脚手架(框架)大量使用了协程
 
 
+
+
 ## 从HelloWorld开始
 
 一个最简单的demo, 用于演示编写一个简单的`http`服务器, 对于任意请求都返回`hello world`
@@ -79,13 +81,14 @@ import xyz.scootaloo.vertlin.web.HttpRouterRegister
 class HelloHttpRouter : HttpRouterRegister("/*") {
 	override fun register(router: Router) = router.run {
         // 处理使用get访问以"/"开头的请求
-		get("/*") { // 这里可以使用协程
-			it.end("hello world")
+		get("/:name") { // 这里可以使用协程
+			val name = it.pathParam("name")
+            it.end("hello $name")
 		}
 	}
 }
 ```
-这样一个路由器就写完了. 执行`Launcher`的main方法, 服务器启动, 回到浏览器输入`http://localhost:8080`可以看到输出的`hello world`
+这样一个路由器就写完了. 执行`Launcher`的main方法, 服务器启动, 回到浏览器输入`http://localhost:8080`可以看到输出的`hello
 
 
 ## 创建HTTP服务器
@@ -102,12 +105,20 @@ get("/test/:name") { ctx ->
     delay(2000) // 在这里暂停2秒, 模拟一个异步调用
     ctx.end(name) // 2秒后返回捕获到的路径参数
 }
+
 post("/test") {
-    it.end()
+    it.end("hello world")
 }
+
 put("/test") {
-    it.end()
+    it.end("hello world")
 }
+
+// 如果一个请求监听任意路径的get请求, 可以这样写
+get {
+    it.end("hello world")
+}
+
 // 路径可以是正则表达式, 参考vertx文档
 ```
 
@@ -123,7 +134,7 @@ class AuthInterceptor : HttpRouterRegister("/*") {
             val auth = it.request().getHeader("Authentication")
             val result = handle(ctx, auth).await() // 异步校验权限
             if (result) {
-                // 如果检查通过则放行
+                // 如果检查通过则放行, 也可以在上下文中存放用户信息
                 it.next()
             } else {
                 it.fail(401) // 返回一个错误状态码
@@ -141,6 +152,7 @@ class AuthInterceptor : HttpRouterRegister("/*") {
 ```toml
 [http]
 port = 9090
+prefix = "/test" // 指定应用前缀
 ```
 
 这样再次启动, 端口就监听到9090了
@@ -169,17 +181,83 @@ todo
 
 ## 使用配置
 
+默认配置文件格式为`toml`, 在`resources`目录下创建文件`config.toml`, 内容为:
+
+```toml
+[hello]
+name = "abc"
+age = 1990
+```
+
+然后写一个配置类
+
+```kotlin
+import xyz.scootaloo.vertlin.boot.config.Config
+import xyz.scootaloo.vertlin.boot.config.Prefix
+
+@Prefix("hello")
+data class HelloConfig(
+    val name: String,
+    val age: Int
+) : Config
+```
+
+使用时用`inject`操作符将配置类注入, 可以拿到`HelloConfig`的实例, 对象属性即配置文件中的内容
+
+```kotlin
+object Hello {
+    val helloConfig by inject(Hello::class)
+}
+```
+
+### 使用`Profile`
+
+假如你有多个配置文件, 你可以决定什么时候使用什么配置文件
+
+现在有3个配置文件
+
+```toml
+# 在config.toml中
+[profiles]
+active = "dev"
+
+[hello]
+age = 17
+
+# 在config-dev.toml中
+[hello]
+name = "dev"
+
+# 在config-prod.toml中
+[hello]
+name = "prod"
+```
+
+由于在默认配置中指定了`dev`作为配置文件, 所以此时访问配置项`hello.name`时输出`prod`,在`dev`和`prod`配置中没有指定`hello.age`配置项, 但是仍然输出`17`, 因为所有附加配置文件都继承于默认配置, 所以你可以在`config.toml`中存放公共的配置项
+
+另外可以通过命令行注入配置, 比如使用如下命令运行一个`jar`时, `prod` 被启用
+
+`java -jar my-server.jar --profiles.avtive=prod`
+
 
 
 ## 自动注入
+
+todo
+
+
 
 
 
 ## Eventbus
 
+todo
+
 
 
 ## 本地缓存
+
+todo
 
 
 
@@ -187,9 +265,23 @@ todo
 
 ### 服务与服务清单
 
+todo
+
+
+
 ### 服务解析器
+
+todo
+
+
 
 ### 服务的生命周期
 
+todo
+
+
+
 ### 命令行
+
+todo
 
