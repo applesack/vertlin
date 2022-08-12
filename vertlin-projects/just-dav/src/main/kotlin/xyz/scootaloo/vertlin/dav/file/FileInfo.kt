@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.dav.file
 
 import io.vertx.core.http.impl.MimeMapping
+import xyz.scootaloo.vertlin.dav.util.PathUtils
 import java.io.File
 import java.nio.file.Path
 
@@ -33,11 +34,12 @@ interface FileInfo {
         }
 
         fun filename(path: String): String {
-            val separatorIdx = path.lastIndexOf('/')
-            if (separatorIdx == path.length - 1) {
+            val decoded = PathUtils.decodeUriComponent(path)
+            val separatorIdx = decoded.lastIndexOf('/')
+            if (separatorIdx == decoded.length - 1) {
                 return ""
             }
-            return path.substring(separatorIdx + 1)
+            return decoded.substring(separatorIdx + 1)
         }
 
         fun parent(absolute: String, base: String): String {

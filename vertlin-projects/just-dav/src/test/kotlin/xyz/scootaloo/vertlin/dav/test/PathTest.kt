@@ -4,8 +4,6 @@ import org.junit.jupiter.api.Test
 import xyz.scootaloo.vertlin.boot.core.TestDSL
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import kotlin.io.path.Path
-import kotlin.io.path.absolute
-import kotlin.system.measureTimeMillis
 
 /**
  * @author flutterdash@qq.com
@@ -51,6 +49,26 @@ class PathTest : TestDSL {
 
         val text7 = " %2b"
         PathUtils.decodeUriComponent(text7).log()
+    }
+
+    @Test
+    fun test0() {
+        val text = "/Hello%20World%20Sources.zip"
+        PathUtils.decodeUriComponent(text, false).log()
+
+        val clear = "/Hello World Sources.zip"
+        PathUtils.encodeUriComponent(clear).log()
+    }
+
+    @Test
+    fun test1() {
+        val base = Path("/hello")
+        val subPath = Path("/hello/你好 世界/hello world/world")
+        val relative = base.relativize(subPath).toString()
+        relative.log()
+
+        // /%E6%A0%91%E8%8E%93%E6%B4%BEPython%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97%20%28%E6%95%B0%E5%AD%97%E5%8C%A0%E4%BA%BA%29_4775076.epub
+        // /%E6%A0%91%E8%8E%93%E6%B4%BEPython%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97%20%28%E6%95%B0%E5%AD%97%E5%8C%A0%E4%BA%BA%29_4775076.epub
     }
 
 }

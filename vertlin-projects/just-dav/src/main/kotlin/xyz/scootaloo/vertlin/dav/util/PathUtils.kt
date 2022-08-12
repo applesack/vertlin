@@ -4,7 +4,6 @@ import io.vertx.core.net.impl.URIDecoder
 import java.io.File
 import java.net.URLEncoder
 import java.nio.file.Path
-import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
 
 /**
@@ -14,10 +13,11 @@ import kotlin.io.path.absolutePathString
 object PathUtils {
 
     /**
+     * ' ' -> '%20'
      * '+' -> ' '
      * '%2B' -> '+'
      */
-    fun decodeUriComponent(uri: String, plus: Boolean = true): String {
+    fun decodeUriComponent(uri: String, plus: Boolean = false): String {
         return URIDecoder.decodeURIComponent(uri, plus)
     }
 
@@ -28,6 +28,7 @@ object PathUtils {
     fun encodeUriComponent(uri: String): String {
         return URLEncoder.encode(uri, "UTF-8")
             .replace("%2F", "/")
+            .replace("+", "%20")
     }
 
     private val separator = File.separatorChar

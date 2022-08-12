@@ -15,7 +15,7 @@ import xyz.scootaloo.vertlin.dav.util.DateUtils
 import xyz.scootaloo.vertlin.dav.util.FileOperations
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import xyz.scootaloo.vertlin.web.endWithXml
-import java.util.UUID
+import java.util.*
 import kotlin.io.path.absolutePathString
 
 /**
@@ -99,11 +99,6 @@ object PropFindService : FileOperations() {
             resourceType.addElement(QName(MultiStatus.collection, namespace))
             contentType.addText(MultiStatus.unixDir)
         }
-
-        if (!info.isDirectory) {
-            val displayName = prop.addElement(QName(MultiStatus.displayName, namespace))
-            displayName.addText(info.filename)
-        }
     }
 
     private fun buildErrorResponseInMultiStatus(root: Element, code: Int, info: FileInfo) {
@@ -141,7 +136,6 @@ object PropFindService : FileOperations() {
         const val contentLength = "getcontentlength"
         const val contentType = "getcontenttype"
         const val lastModified = "getlastmodified"
-        const val displayName = "displayname"
         const val status = "status"
         const val responseDescription = "responsedescription"
         const val resourceType = "resourcetype"
