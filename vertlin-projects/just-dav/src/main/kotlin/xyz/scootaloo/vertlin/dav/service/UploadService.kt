@@ -50,7 +50,7 @@ object UploadService : FileOperations() {
             return
         }
 
-        val content = ctx.body().buffer()
+        val content = ctx.body().buffer() ?: Buffer.buffer()
         val result = runCatching { upload(targetFullPath, content) }
         if (result.isFailure) {
             val msg = "上传文件错误: 文件名${block.target}, " +
