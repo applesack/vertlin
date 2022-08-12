@@ -1,5 +1,5 @@
 [webdav]
-path = "/home/twi/project/java/project/Stinkin-Thinkin/home"
+path = "home"
 
 [webdav.users]
 test = "123456"
