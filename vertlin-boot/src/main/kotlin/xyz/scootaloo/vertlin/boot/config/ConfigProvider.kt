@@ -15,4 +15,8 @@ interface ConfigProvider {
         log.error("配置项错误: 格式错误, 在$key, 类型应该为$accept")
     }
 
+    fun logRangeError(key: String, accept: String, log: Logger) {
+        log.error("配置项错误: 范围错误, 在$key, 接受的范围 $accept")
+    }
+
 }

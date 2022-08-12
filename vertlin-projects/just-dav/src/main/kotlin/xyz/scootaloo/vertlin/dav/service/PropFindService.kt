@@ -15,6 +15,7 @@ import xyz.scootaloo.vertlin.dav.util.DateUtils
 import xyz.scootaloo.vertlin.dav.util.FileOperations
 import xyz.scootaloo.vertlin.dav.util.PathUtils
 import xyz.scootaloo.vertlin.web.endWithXml
+import java.util.UUID
 import kotlin.io.path.absolutePathString
 
 /**
@@ -48,6 +49,11 @@ object PropFindService : FileOperations() {
         val xml = DocumentHelper.createDocument()
         val namespace = Namespace("D", "DAV:")
         val root = xml.addElement(QName("multistatus", namespace))
+
+        val token = "urn:uuid:${UUID.randomUUID()}/"
+        root.addNamespace("ns0", token)
+        root.addNamespace("ns1", "urn:schemas-microsoft-com:")
+
         for ((state, file) in files) {
             buildResponseWithFileInfo(root, state, file)
         }
@@ -94,8 +100,10 @@ object PropFindService : FileOperations() {
             contentType.addText(MultiStatus.unixDir)
         }
 
-        val displayName = prop.addElement(QName(MultiStatus.displayName, namespace))
-        displayName.addText(info.filename)
+        if (!info.isDirectory) {
+            val displayName = prop.addElement(QName(MultiStatus.displayName, namespace))
+            displayName.addText(info.filename)
+        }
     }
 
     private fun buildErrorResponseInMultiStatus(root: Element, code: Int, info: FileInfo) {

@@ -85,7 +85,7 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
                 }
             }
 
-            rootRouter.route().handler(BodyHandler.create())
+            rootRouter.route().handler(bodyHandler())
             if (httpRouters.isEmpty()) {
                 log.warn("http-server: 未找到任何请求处理器实现")
                 return rootRouter
@@ -123,6 +123,11 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
                     finalHandler(ws)
                 }
             }
+        }
+
+        private fun bodyHandler(): BodyHandler {
+            return BodyHandler.create()
+                .setBodyLimit(config.bodyLimit)
         }
 
         private fun logRequest(ctx: RoutingContext) {

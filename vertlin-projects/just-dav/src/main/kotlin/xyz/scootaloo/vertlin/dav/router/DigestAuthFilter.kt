@@ -1,5 +1,6 @@
 package xyz.scootaloo.vertlin.dav.router
 
+import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.impl.logging.Logger
 import io.vertx.ext.auth.User
@@ -32,7 +33,11 @@ class DigestAuthFilter : HttpRouterRegister("/*") {
 
     override fun register(router: Router) {
         router.any {
-            handle(it)
+            if (it.request().method() == HttpMethod.OPTIONS) {
+                it.next()
+            } else {
+                handle(it)
+            }
         }
     }
 

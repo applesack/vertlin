@@ -9,13 +9,18 @@ import io.vertx.ext.web.RoutingContext
 object OptionsService {
 
     private const val public =
-        "OPTIONS,TRACE,GET,HEAD,DELETE,PUT,POST,COPY,MOVE,MKCOL,PROPFIND,PROPPATCH,LOCK,UNLOCK"
+        "OPTIONS, PROPFIND, GET, HEAD, PUT, DELETE, COPY, MOVE, MKCOL, LOCK, UNLOCK, POST"
+
+    // DAV: 1,2
+    // MS-Author-Via: DAV
+    // Accept-Ranges: bytes
+    // Allow:
 
     private val headers = mapOf(
         "DAV" to "1,2",
         "Allow" to public,
         "MS-Author-Via" to "DAV",
-        "public" to public
+        "Accept-Ranges" to "bytes"
     )
 
     fun handle(ctx: RoutingContext) {

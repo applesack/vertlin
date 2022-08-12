@@ -5,6 +5,7 @@ import xyz.scootaloo.vertlin.boot.config.ConfigManager
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
 import xyz.scootaloo.vertlin.boot.config.Prefix
 import xyz.scootaloo.vertlin.boot.core.X
+import java.util.LongSummaryStatistics
 
 /**
  * @author flutterdash@qq.com
@@ -14,7 +15,8 @@ import xyz.scootaloo.vertlin.boot.core.X
 class HttpServerConfig(
     val port: Int,
     val prefix: String,
-    val enableLog: Boolean
+    val enableLog: Boolean,
+    val bodyLimit: Long
 ) : Config
 
 
@@ -25,15 +27,18 @@ class HttpServerConfigProvider : ConfigProvider {
     private val port = "http.port"
     private val prefix = "http.prefix"
     private val enableLog = "http.enableLog"
+    private val bodyLimit = "http.bodyLimit"
 
     override fun register(manager: ConfigManager) {
         manager.registerChecker(port, ::checkPort)
         manager.registerChecker(prefix, ::checkPrefix)
         manager.registerChecker(enableLog, ::checkEnableLog)
+        manager.registerChecker(bodyLimit, ::bodyLimitChecker)
 
         manager.registerDefault(port, 8080)
         manager.registerDefault(prefix, "")
         manager.registerDefault(enableLog, true)
+        manager.registerDefault(bodyLimit, 83886080L) // 50M
     }
 
     private fun checkPort(value: Any): Boolean {
@@ -43,7 +48,7 @@ class HttpServerConfigProvider : ConfigProvider {
         }
         val num = value.toInt()
         if (num < 1 || num > 65535) {
-            log.warn("配置项'${port}'取值为1~65535")
+            logRangeError(port, "1~65535", log)
             return false
         }
         return true
@@ -60,6 +65,14 @@ class HttpServerConfigProvider : ConfigProvider {
     private fun checkEnableLog(value: Any): Boolean {
         if (value !is Boolean) {
             logTypeError(enableLog, Boolean::class, log)
+            return false
+        }
+        return true
+    }
+
+    private fun bodyLimitChecker(value: Any): Boolean {
+        if (value !is Number) {
+            logTypeError(enableLog, Long::class, log)
             return false
         }
         return true
