@@ -64,3 +64,9 @@ data class AccessBlock(
 
     }
 }
+
+
+@Serializable
+data class PropBlock(
+    val showProps: Boolean
+)

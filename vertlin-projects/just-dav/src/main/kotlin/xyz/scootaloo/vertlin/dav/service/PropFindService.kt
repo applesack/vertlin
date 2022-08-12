@@ -118,7 +118,7 @@ object PropFindService : FileOperations() {
         val response = root.addElement(QName(MultiStatus.response, namespace))
         val propStat = response.addElement(QName(MultiStatus.propStat, namespace))
 
-        val href = propStat.addElement(QName(MultiStatus.href, namespace))
+        val href = response.addElement(QName(MultiStatus.href, namespace))
         href.addText(PathUtils.encodeUriComponent(info.path))
 
         return propStat to namespace
