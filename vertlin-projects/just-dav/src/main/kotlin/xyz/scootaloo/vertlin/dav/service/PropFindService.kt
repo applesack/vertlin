@@ -59,6 +59,7 @@ object PropFindService : FileOperations() {
             buildResponseWithFileInfo(root, state, file)
         }
 
+        xml.xmlEncoding = "utf-8"
         return xml.asXML()
     }
 
@@ -98,7 +99,7 @@ object PropFindService : FileOperations() {
             contentType.addText(MultiStatus.unixDir)
         }
 
-        val status = propStat.addElement(QName(MultiStatus.status))
+        val status = propStat.addElement(QName(MultiStatus.status, namespace))
         status.addText(xyz.scootaloo.vertlin.dav.util.MultiStatus.statusOf(200))
     }
 
