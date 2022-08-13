@@ -24,6 +24,8 @@ import kotlin.io.path.absolutePathString
  */
 object PropFindService : FileOperations() {
 
+    private val urnToken by lazy { "urn:uuid:${UUID.randomUUID()}/" }
+
     suspend fun propFind(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
         val deniedSet = detect(ctx, block, block.depth.depth)?.toSet() ?: return
@@ -50,8 +52,7 @@ object PropFindService : FileOperations() {
         val namespace = Namespace("D", "DAV:")
         val root = xml.addElement(QName("multistatus", namespace))
 
-        val token = "urn:uuid:${UUID.randomUUID()}/"
-        root.addNamespace("ns0", token)
+        root.addNamespace("ns0", urnToken)
         root.addNamespace("ns1", "urn:schemas-microsoft-com:")
 
         for ((state, file) in files) {
@@ -75,9 +76,6 @@ object PropFindService : FileOperations() {
     private fun buildOkResponseInMultiStatus(root: Element, info: FileInfo) {
         val (propStat, namespace) = renderFileHref(root, info)
 
-        val status = propStat.addElement(QName(MultiStatus.status))
-        status.addText(xyz.scootaloo.vertlin.dav.util.MultiStatus.statusOf(200))
-
         val prop = propStat.addElement(QName(MultiStatus.prop, namespace))
 
         val creationDate = prop.addElement(QName(MultiStatus.creationDate, namespace))
@@ -99,6 +97,9 @@ object PropFindService : FileOperations() {
             resourceType.addElement(QName(MultiStatus.collection, namespace))
             contentType.addText(MultiStatus.unixDir)
         }
+
+        val status = propStat.addElement(QName(MultiStatus.status))
+        status.addText(xyz.scootaloo.vertlin.dav.util.MultiStatus.statusOf(200))
     }
 
     private fun buildErrorResponseInMultiStatus(root: Element, code: Int, info: FileInfo) {
@@ -119,10 +120,11 @@ object PropFindService : FileOperations() {
     private fun renderFileHref(root: Element, info: FileInfo): Pair<Element, Namespace> {
         val namespace = root.namespace
         val response = root.addElement(QName(MultiStatus.response, namespace))
-        val propStat = response.addElement(QName(MultiStatus.propStat, namespace))
 
         val href = response.addElement(QName(MultiStatus.href, namespace))
         href.addText(PathUtils.encodeUriComponent(info.path))
+
+        val propStat = response.addElement(QName(MultiStatus.propStat, namespace))
 
         return propStat to namespace
     }
@@ -143,7 +145,7 @@ object PropFindService : FileOperations() {
 
         const val dateFormatMark = "ns0:dt"
         const val datetimeTz = "dateTime.tz"
-        const val datetimeRfc1123 = "rfc1123"
+        const val datetimeRfc1123 = "dateTime.rfc1123"
 
         const val unixDir = "httpd/unix-directory"
     }
