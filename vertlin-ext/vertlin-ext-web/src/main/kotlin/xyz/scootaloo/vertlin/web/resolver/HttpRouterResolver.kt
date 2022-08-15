@@ -1,8 +1,11 @@
 package xyz.scootaloo.vertlin.web.resolver
 
 import io.vertx.ext.web.Router
-import xyz.scootaloo.vertlin.boot.resolver.*
-import xyz.scootaloo.vertlin.boot.util.TypeUtils
+import xyz.scootaloo.vertlin.boot.Service
+import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
+import xyz.scootaloo.vertlin.boot.resolver.ResourcesPublisher
+import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
+import xyz.scootaloo.vertlin.boot.resolver.UnreachableManifest
 import xyz.scootaloo.vertlin.web.HttpRouterRegister
 import kotlin.reflect.KClass
 
@@ -12,10 +15,10 @@ import kotlin.reflect.KClass
  */
 class HttpRouterResolver : ServiceResolver(HttpRouterRegister::class) {
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
-        val instance = TypeUtils.createInstanceByNonArgsConstructor(type) as HttpRouterRegister
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
+        val instance = (service ?: return) as HttpRouterRegister
         val component = RouterComponent(solveOrder(type), instance.mountPoint, instance::register)
-        manager.registerManifest(HttpRouterManifest(component))
+        publisher.registerManifest(HttpRouterManifest(component))
     }
 
     class HttpRouterManifest(

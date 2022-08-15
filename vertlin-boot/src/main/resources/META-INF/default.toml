@@ -1,0 +1,11 @@
+[vertx]
+workerPoolSize = 0
+
+
+[profiles]
+prefix = ""
+avtive = ""
+
+
+[banner]
+path = ""

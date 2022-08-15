@@ -3,12 +3,16 @@ package xyz.scootaloo.vertlin.boot.internal
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.EventBus
 import io.vertx.core.file.FileSystem
+import xyz.scootaloo.vertlin.boot.Holder
+import xyz.scootaloo.vertlin.boot.LazyInit
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 /**
  * 资源管理
@@ -23,77 +27,127 @@ internal object Container {
 
     @Volatile private lateinit var vertx: Vertx
 
-    private val singletonLock = ReentrantReadWriteLock()
-    private val singletons = ConcurrentHashMap<String, Any>()
+    private val resources = HashMap<String, KClass<*>>()
+    private val singletonMapper = HashMap<String, Any>()
 
-    private val contextLock = ReentrantReadWriteLock()
-    private val contextMapper = ConcurrentHashMap<String, String>()
+    private val sharedSingletonLock = ReentrantReadWriteLock()
+    private val sharedSingletonMapper = ConcurrentHashMap<String, Any>()
+
+    private val contextRegisterLock = ReentrantReadWriteLock()
+    private val contextRegisterMapper = ConcurrentHashMap<String, String>()
 
     private val contextSingletonsLock = ReentrantReadWriteLock()
-    private val contextSingletons = ConcurrentHashMap<String, HashMap<String, Any>>()
+    private val contextSingletonMapper = ConcurrentHashMap<String, HashMap<String, Any>>()
 
     fun getObject(type: KClass<*>): Any? {
         val typeQName = TypeUtils.solveQualifiedName(type)
-        return singletonLock.read {
-            singletons[typeQName]
+        return sharedSingletonLock.read {
+            sharedSingletonMapper[typeQName]
         }
     }
 
     fun getContextObject(type: KClass<*>): Any? {
         val threadName = realThreadName()
-        val contextName = contextLock.read {
-            contextMapper[threadName]
+        val context = contextRegisterLock.read {
+            contextRegisterMapper[threadName]
         } ?: return null
 
+        return getContextObject(context, type)
+    }
+
+    fun getContextObject(context: String, type: KClass<*>): Any? {
         val typeQName = TypeUtils.solveQualifiedName(type)
         return contextSingletonsLock.read ret@{
-            val mapper = contextSingletons[contextName] ?: return@ret null
+            val mapper = contextSingletonMapper[context] ?: return@ret null
             return mapper[typeQName]
         }
     }
 
-    internal fun start() {
+    fun loadResources(resources: Collection<KClass<*>>) {
+        for (res in resources) {
+            val typeQName = TypeUtils.solveQualifiedName(res)
+            if (typeQName !in this.resources) {
+                this.resources[typeQName] = res
+            }
+        }
+    }
+
+    fun registerResource(instance: Any, facade: KClass<*> = instance::class) {
+        val typeQName = TypeUtils.solveQualifiedName(facade)
+        if (typeQName !in resources) {
+            resources[typeQName] = facade
+        }
+        singletonMapper[typeQName] = instance
+    }
+
+    fun <T : Any> instancesOf(superType: KClass<T>): List<Pair<KClass<*>, T?>> {
+        val results = LinkedList<Pair<KClass<*>, T?>>()
+        for (type in resources.values) {
+            if (type.isSubclassOf(superType)) {
+                @Suppress("UNCHECKED_CAST")
+                val ins: T? = instantiate(type) as T?
+                results.add(type to ins)
+            }
+        }
+        return results
+    }
+
+    fun start() {
         modifyStartupState(StartupState.STARTING)
     }
 
-    internal fun failure() {
+    fun failure() {
         modifyStartupState(StartupState.FAILURE)
     }
 
-    internal fun finish() {
+    fun finish() {
         modifyStartupState(StartupState.FINISHED)
     }
 
-    internal fun registerVertx(vertx: Vertx) {
+    fun registerVertx(vertx: Vertx) {
         this.vertx = vertx
         registerSharedSingleton(vertx, Vertx::class)
         registerSharedSingleton(vertx.eventBus(), EventBus::class)
         registerSharedSingleton(vertx.fileSystem(), FileSystem::class)
     }
 
-    internal fun registerSharedSingleton(obj: Any, type: KClass<*> = obj::class) {
+    fun registerSharedSingleton(obj: Any, type: KClass<*> = obj::class) {
         val typeQName = TypeUtils.solveQualifiedName(type)
-        singletonLock.write {
-            singletons[typeQName] = obj
+        sharedSingletonLock.write {
+            sharedSingletonMapper[typeQName] = obj
         }
     }
 
-    internal fun registerContextSingleton(
+    fun registerContextSingleton(
         obj: Any, context: String, type: KClass<out Any> = obj::class
     ) {
         val typeQName = TypeUtils.solveQualifiedName(type)
         contextSingletonsLock.write {
-            val mapper = contextSingletons[context] ?: HashMap()
-            contextSingletons[context] = mapper
+            val mapper = contextSingletonMapper[context] ?: HashMap()
+            contextSingletonMapper[context] = mapper
             mapper[typeQName] = obj
         }
     }
 
-    internal fun registerContextMapper(contextName: String) {
+    fun registerContextMapper(contextName: String) {
         val threadName = realThreadName()
-        contextLock.write {
-            contextMapper[threadName] = contextName
+        contextRegisterLock.write {
+            contextRegisterMapper[threadName] = contextName
         }
+    }
+
+    private fun instantiate(type: KClass<*>): Any? {
+        if (type.isSubclassOf(LazyInit::class))
+            return null
+
+        checkState(StartupState.STARTING)
+        val typeQName = TypeUtils.solveQualifiedName(type)
+        if (typeQName in singletonMapper) {
+            return singletonMapper[typeQName]!!
+        }
+        val instance = TypeUtils.createInstanceByNonArgsConstructor(type)
+        singletonMapper[typeQName] = instance
+        return instance
     }
 
     private fun realThreadName(): String {
@@ -105,12 +159,35 @@ internal object Container {
         return threadName
     }
 
-    private fun checkState(targetState: StartupState = StartupState.FINISHED) {
+    /**
+     * 指定当前系统状态
+     *
+     * [not]是否反选
+     *
+     * [targetState] = [StartupState.STARTING], [not] = false
+     * 当前系统状态必须为[StartupState.STARTING]
+     *
+     * [targetState] = [StartupState.STARTING], [not] = true
+     * 当前系统状态不能是[StartupState.STARTING]
+     */
+    private fun checkState(targetState: StartupState, not: Boolean = false) {
         stateLock.read {
-            if (targetState != state) {
-                throw IllegalStateException(
-                    "状态异常: 当前操作需要系统状态为'$targetState'; 当前系统状态'$state'"
-                )
+            val expr = if (not) targetState != state else targetState == state
+            if (!expr) {
+                val msg = buildString {
+                    append("状态异常: ")
+                    append("当前操作需要系统状态")
+                    if (not) {
+                        append("不为")
+                    } else {
+                        append("为")
+                    }
+                    append(targetState)
+                    append("; 当前系统状态为")
+                    append(state)
+                }
+
+                throw IllegalStateException(msg)
             }
         }
     }

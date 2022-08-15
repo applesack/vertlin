@@ -1,9 +1,9 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.eventbus.EventBus
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.resolver.ResourcesPublisher
 import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
-import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import kotlin.random.Random
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
@@ -24,10 +24,10 @@ import kotlin.reflect.jvm.javaField
  */
 object EventbusApiResolver : ServiceResolver(EventbusApi::class) {
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
+        val instance = service ?: return
         val context = solveContext(type)
         val addressPrefix = eventbusServiceAddressPrefix(type)
-        val instance = TypeUtils.createInstanceByNonArgsConstructor(type)
 
         val manifest = EventbusApiManifest(context)
         for (property in instance::class.declaredMemberProperties) {
@@ -35,7 +35,7 @@ object EventbusApiResolver : ServiceResolver(EventbusApi::class) {
 
             if (fieldType.isSubclassOf(EventbusApiBuilder::class)) {
                 property.isAccessible = true
-                val builder = property.call(instance) as EventbusApiBuilder
+                val builder = property.call(service) as EventbusApiBuilder
                 val qualifiedAddress = qualifiedAddressByProperty(addressPrefix, property)
 
                 builder.address = qualifiedAddress
@@ -44,16 +44,16 @@ object EventbusApiResolver : ServiceResolver(EventbusApi::class) {
             }
         }
 
-        manager.publishSharedSingleton(instance)
-        manager.registerManifest(manifest)
+        publisher.publishSharedSingleton(instance)
+        publisher.registerManifest(manifest)
     }
 
     private fun qualifiedAddressByProperty(prefix: String, prop: KProperty1<*, *>): String {
         return "$prefix:${prop.name}"
     }
 
-    private fun eventbusServiceAddressPrefix(klass: KClass<*>): String {
-        val simpleName = klass.simpleName ?: "unknown${Random.nextInt(300)}"
+    private fun eventbusServiceAddressPrefix(type: KClass<*>): String {
+        val simpleName = type.simpleName ?: "unknown${Random.nextInt(300)}"
         return "api:$simpleName"
     }
 

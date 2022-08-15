@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.boot.eventbus
 
 import io.vertx.core.Vertx
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.resolver.*
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
@@ -12,15 +13,15 @@ import kotlin.reflect.KClass
  */
 object EventbusCodecResolver : ServiceResolver(EventbusDecoder::class), ManifestReducer {
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
-        val instance = TypeUtils.createInstanceByNonArgsConstructor(type) as EventbusDecoder
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
+        val instance = (service ?: return) as EventbusDecoder
         val builder = EventbusDecoderBuilder()
         instance.decoders(builder)
         for (codec in builder.decoders) {
             // 当有多个属性都引用了同一个类型的解码器, 则会导致重复注册
             // 当出现重复注册问题时, 只有最早注册的解码器会生效, 而后续注册的解码器会当作异常抛出
             // 所以本解析器实现了ServiceReducer接口, 可以将多余的类型解码器约简, 消除重复注册的异常
-            manager.registerManifest(codec)
+            publisher.registerManifest(codec)
         }
     }
 

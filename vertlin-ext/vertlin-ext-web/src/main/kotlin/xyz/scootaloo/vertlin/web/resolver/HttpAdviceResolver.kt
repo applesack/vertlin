@@ -1,5 +1,6 @@
 package xyz.scootaloo.vertlin.web.resolver
 
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.resolver.ResourcesPublisher
 import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
 import xyz.scootaloo.vertlin.web.HttpHandlerAdvice
@@ -11,7 +12,7 @@ import kotlin.reflect.KClass
  */
 class HttpAdviceResolver : ServiceResolver(HttpHandlerAdvice::class) {
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
         TODO("Not yet implemented")
     }
 

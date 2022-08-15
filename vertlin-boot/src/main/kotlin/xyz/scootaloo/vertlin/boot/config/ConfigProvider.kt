@@ -1,13 +1,14 @@
 package xyz.scootaloo.vertlin.boot.config
 
 import io.vertx.core.impl.logging.Logger
+import xyz.scootaloo.vertlin.boot.Service
 import kotlin.reflect.KClass
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/7/27 下午8:27
  */
-interface ConfigProvider {
+interface ConfigProvider : Service {
 
     fun register(manager: ConfigManager)
 

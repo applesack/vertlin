@@ -5,7 +5,6 @@ import xyz.scootaloo.vertlin.boot.config.ConfigManager
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
 import xyz.scootaloo.vertlin.boot.config.Prefix
 import xyz.scootaloo.vertlin.boot.core.X
-import java.util.LongSummaryStatistics
 
 /**
  * @author flutterdash@qq.com
@@ -28,17 +27,21 @@ class HttpServerConfigProvider : ConfigProvider {
     private val prefix = "http.prefix"
     private val enableLog = "http.enableLog"
     private val bodyLimit = "http.bodyLimit"
+    private val enableSsl = "http.ssl.enable"
+    private val sslPath = "http.ssl.path"
 
     override fun register(manager: ConfigManager) {
         manager.registerChecker(port, ::checkPort)
         manager.registerChecker(prefix, ::checkPrefix)
         manager.registerChecker(enableLog, ::checkEnableLog)
         manager.registerChecker(bodyLimit, ::bodyLimitChecker)
+        manager.registerChecker(enableSsl, ::enableSslChecker)
 
         manager.registerDefault(port, 8080)
         manager.registerDefault(prefix, "")
         manager.registerDefault(enableLog, true)
         manager.registerDefault(bodyLimit, 83886080L) // 50M
+        manager.registerDefault(enableSsl, false)
     }
 
     private fun checkPort(value: Any): Boolean {
@@ -72,7 +75,15 @@ class HttpServerConfigProvider : ConfigProvider {
 
     private fun bodyLimitChecker(value: Any): Boolean {
         if (value !is Number) {
-            logTypeError(enableLog, Long::class, log)
+            logTypeError(bodyLimit, Long::class, log)
+            return false
+        }
+        return true
+    }
+
+    private fun enableSslChecker(value: Any): Boolean {
+        if (value !is String) {
+            logTypeError(enableSsl, String::class, log)
             return false
         }
         return true

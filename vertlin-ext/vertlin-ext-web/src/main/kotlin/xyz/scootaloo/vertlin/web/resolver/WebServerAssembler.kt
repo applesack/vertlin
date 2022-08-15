@@ -10,6 +10,7 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.kotlin.core.http.httpServerOptionsOf
 import io.vertx.kotlin.coroutines.await
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.internal.CoroutineResource
 import xyz.scootaloo.vertlin.boot.internal.inject
@@ -29,7 +30,7 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
     private val log = X.getLogger(this::class)
     private val config by inject(HttpServerConfig::class)
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
         throw UnsupportedOperationException()
     }
 

@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.boot.config
 
 import com.moandjiezana.toml.Toml
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.command.CommandLineArgs
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.exception.RequiredConfigLackException
@@ -24,21 +25,21 @@ object ConfigServiceResolver : ServiceResolver(Config::class) {
 
     private val log = X.getLogger(this::class)
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
         val result = createInstance(type)
         if (result.isFailure) {
             throw TypeMismatchingException(type, result.exceptionOrNull())
         }
 
         val instance = result.getOrThrow()
-        manager.publishSharedSingleton(instance)
+        publisher.publishSharedSingleton(instance)
     }
 
     internal fun load(
         loader: ClassLoader, cmd: CommandLineArgs,
-        configProviders: Collection<ConfigProvider>
+        configProviders: Collection<Pair<KClass<*>, ConfigProvider?>>
     ) {
-        Center.load(loader, cmd, configProviders)
+        Center.load(loader, cmd, configProviders.mapNotNull { it.second })
     }
 
     private fun createInstance(type: KClass<*>): Result<Any> {

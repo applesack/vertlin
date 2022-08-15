@@ -2,14 +2,13 @@ package xyz.scootaloo.vertlin.boot.crontab
 
 import io.vertx.core.Vertx
 import xyz.scootaloo.vertlin.boot.Ordered
+import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.ServiceLifeCycle
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.currentTimeMillis
 import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.resolver.*
-import xyz.scootaloo.vertlin.boot.util.TypeUtils
-import java.util.LinkedList
-import java.util.TreeMap
+import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -18,12 +17,12 @@ import kotlin.reflect.KClass
  */
 object CrontabResolver : ServiceResolver(Crontab::class), ManifestReducer {
 
-    override fun solve(type: KClass<*>, manager: ResourcesPublisher) {
+    override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
         val context = solveContext(type)
-        val instance = TypeUtils.createInstanceByNonArgsConstructor(type)
+        val instance = service ?: return
         val crontab = instance as Crontab
         val manifest = CrontabManifest(context, crontab)
-        manager.registerManifest(manifest)
+        publisher.registerManifest(manifest)
     }
 
     override fun reduce(manager: ManifestManager) {

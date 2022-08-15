@@ -1,0 +1,13 @@
+[http]
+port = 8080
+prefix = ""
+logOnRequest = true
+bodyLimit = 83886080
+
+
+[http.ssl]
+enable = false
+path = ""
+
+
+[http.websocket]

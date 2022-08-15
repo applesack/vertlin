@@ -1,6 +1,7 @@
 package xyz.scootaloo.vertlin.boot.resolver.impl
 
 import xyz.scootaloo.vertlin.boot.core.X
+import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.internal.Container
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import xyz.scootaloo.vertlin.boot.resolver.ManifestManager
@@ -21,8 +22,6 @@ internal object ManifestManagerImpl : ManifestManager {
     private var closed = false
 
     private val manifests = HashMap<String, MutableList<ContextServiceManifest>>()
-    private val singletons = HashMap<String, Pair<KClass<out Any>, Any>>()
-    private val contextSingletons = HashMap<String, HashMap<String, Pair<KClass<out Any>, Any>>>()
 
     override fun <T : ContextServiceManifest> extractManifests(type: KClass<T>): List<T> {
         val typeQName = TypeUtils.solveQualifiedName(type)
@@ -39,11 +38,9 @@ internal object ManifestManagerImpl : ManifestManager {
     }
 
     override fun publishSharedSingleton(ins: Any, type: KClass<out Any>) {
-        if (closed) {
-            return
-        }
-        val typeQName = TypeUtils.solveQualifiedName(type)
-        if (typeQName in singletons) {
+        isClosed() ?: return
+        if (Container.getObject(type) != null) {
+            val typeQName = TypeUtils.solveQualifiedName(type)
             val caller = Rearview.formatCaller(4)
             log.warn(
                 "服务解析警告: 重复的单例注册, 由于类型'$typeQName'已存在, 所以当前实例被忽略; 调用点'$caller'"
@@ -51,18 +48,13 @@ internal object ManifestManagerImpl : ManifestManager {
             return
         }
 
-        singletons[typeQName] = type to ins
+        Container.registerSharedSingleton(ins, type)
     }
 
     override fun publishContextSingleton(ins: Any, context: String, type: KClass<out Any>) {
-        if (closed) {
-            return
-        }
-        val mapper = contextSingletons[context] ?: HashMap()
-        contextSingletons[context] = mapper
-
-        val typeQName = TypeUtils.solveQualifiedName(type)
-        if (typeQName in mapper) {
+        isClosed() ?: return
+        if (Container.getContextObject(context, type) != null) {
+            val typeQName = TypeUtils.solveQualifiedName(type)
             val caller = Rearview.formatCaller(4)
             log.warn(
                 "服务解析警告: 重复的单例注册, 在上下文'$context'中, 类型'$typeQName'; 调用点:'$caller'"
@@ -70,25 +62,11 @@ internal object ManifestManagerImpl : ManifestManager {
             return
         }
 
-        mapper[typeQName] = type to ins
+        Container.registerContextSingleton(ins, context, type)
     }
 
     fun reduce(reducer: ManifestReducer) {
         reducer.reduce(this)
-    }
-
-    fun publishAllSingletons() {
-        for ((type, ins) in singletons.values) {
-            Container.registerSharedSingleton(ins, type)
-        }
-        for ((context, mapper) in contextSingletons) {
-            for ((_, pair) in mapper) {
-                val (type, ins) = pair
-                Container.registerContextSingleton(ins, context, type)
-            }
-        }
-        singletons.clear()
-        contextSingletons.clear()
     }
 
     fun displayManifests(): List<ContextServiceManifest> {
@@ -98,8 +76,11 @@ internal object ManifestManagerImpl : ManifestManager {
     fun clearCache() {
         closed = true
         manifests.clear()
-        singletons.clear()
-        contextSingletons.clear()
+    }
+
+    private fun isClosed(): Any? {
+        if (closed) return null
+        return Constant.PRESET
     }
 
 }

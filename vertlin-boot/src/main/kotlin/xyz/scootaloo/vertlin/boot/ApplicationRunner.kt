@@ -4,26 +4,24 @@ import io.vertx.core.Future
 import io.vertx.core.Vertx
 import io.vertx.core.impl.logging.Logger
 import xyz.scootaloo.vertlin.boot.command.CommandLineArgs
-import xyz.scootaloo.vertlin.boot.config.Config
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
 import xyz.scootaloo.vertlin.boot.config.ConfigServiceResolver
 import xyz.scootaloo.vertlin.boot.core.X
+import xyz.scootaloo.vertlin.boot.core.ifNotNull
 import xyz.scootaloo.vertlin.boot.core.trans
 import xyz.scootaloo.vertlin.boot.core.wrapInFut
-import xyz.scootaloo.vertlin.boot.crontab.Crontab
 import xyz.scootaloo.vertlin.boot.crontab.CrontabAdapter
 import xyz.scootaloo.vertlin.boot.crontab.CrontabResolver
-import xyz.scootaloo.vertlin.boot.eventbus.EventbusApi
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusApiResolver
 import xyz.scootaloo.vertlin.boot.eventbus.EventbusCodecResolver
-import xyz.scootaloo.vertlin.boot.eventbus.EventbusDecoder
 import xyz.scootaloo.vertlin.boot.internal.Constant
 import xyz.scootaloo.vertlin.boot.internal.Container
-import xyz.scootaloo.vertlin.boot.internal.Extension
+import xyz.scootaloo.vertlin.boot.internal.Extensions
 import xyz.scootaloo.vertlin.boot.resolver.ContextServiceManifest
 import xyz.scootaloo.vertlin.boot.resolver.ManifestReducer
 import xyz.scootaloo.vertlin.boot.resolver.ServiceResolver
 import xyz.scootaloo.vertlin.boot.resolver.impl.ManifestManagerImpl
+import xyz.scootaloo.vertlin.boot.util.PackScanner
 import xyz.scootaloo.vertlin.boot.util.StopWatch
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import xyz.scootaloo.vertlin.boot.verticle.MainVerticle
@@ -31,6 +29,7 @@ import java.lang.management.ManagementFactory
 import java.net.InetAddress
 import java.util.*
 import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 /**
  * @author flutterdash@qq.com
@@ -82,9 +81,6 @@ class ApplicationRunner(val boot: BootManifest) {
                 return Unit.wrapInFut()
             }
 
-            loadResolvers(boot.resolvers())
-            loadServices(boot.services())
-
             startServers().transform { done ->
                 if (done.succeeded()) {
                     finish().wrapInFut()
@@ -103,70 +99,84 @@ class ApplicationRunner(val boot: BootManifest) {
     }
 
     private fun loadResources(command: CommandLineArgs) {
+        monitor.displayBeforeServicesResolve()
+
         Container.start()
-        Extension.initialize(loader)
+        loadResourcesFromCurrentProject()
+        loadResourcesFromDependencies()
+        loadResourcesFromPreset()
+
         ConfigServiceResolver.load(
-            loader, command, Extension.instances(ConfigProvider::class)
+            loader, command, Container.instancesOf(ConfigProvider::class)
         )
+
+        loadResolvers(Container.instancesOf(ServiceResolver::class))
+        loadServices(Container.instancesOf(Service::class))
+
+        monitor.displayFinishServiceResolve()
     }
 
-    private fun loadResolvers(resolvers: Collection<KClass<out ServiceResolver>>) {
-        fun load(resolver: ServiceResolver) {
-            val accept = resolver.accept
+    private fun loadResourcesFromCurrentProject() {
+        val resources = LinkedList<KClass<*>>()
+        for (pack in boot.scanPacks()) {
+            val classes = PackScanner.scan(pack)
+            for (clazz in classes) {
+                val klass = clazz.kotlin
+                if (klass.isSubclassOf(Component::class) && !klass.isAbstract) {
+                    resources.add(klass)
+                }
+            }
+        }
+        Container.loadResources(resources)
+    }
+
+    private fun loadResourcesFromPreset() {
+        Container.registerResource(EventbusApiResolver)
+        Container.registerResource(EventbusCodecResolver)
+        Container.registerResource(CrontabResolver)
+        Container.registerResource(ConfigServiceResolver)
+    }
+
+    private fun loadResourcesFromDependencies() {
+        val extensions = Extensions.loadResources()
+        Container.loadResources(extensions)
+    }
+
+    private fun loadResolvers(resolvers: Collection<Pair<KClass<*>, ServiceResolver?>>) {
+        fun load(resolver: ServiceResolver, accept: KClass<*> = resolver.accept) {
             val typeQualified = TypeUtils.solveQualifiedName(accept)
             this.resolvers[typeQualified] = resolver
         }
 
-        monitor.displayBeforeServicesResolve()
-
-        resolvers.forEach { load((TypeUtils.createInstanceByNonArgsConstructor(it)) as ServiceResolver) }
-        Extension.instances(ServiceResolver::class).forEach { load(it) }
-
-        this.resolvers[TypeUtils.solveQualifiedName(EventbusApi::class)] = EventbusApiResolver
-        this.resolvers[TypeUtils.solveQualifiedName(EventbusDecoder::class)] = EventbusCodecResolver
-        this.resolvers[TypeUtils.solveQualifiedName(CrontabAdapter::class)] = CrontabResolver
-        this.resolvers[TypeUtils.solveQualifiedName(Crontab::class)] = CrontabResolver
-        this.resolvers[TypeUtils.solveQualifiedName(Config::class)] = ConfigServiceResolver
-    }
-
-    private fun loadServices(services: Collection<KClass<*>>) {
-        fun load(service: KClass<*>) {
-            var solved = false
-            for (superType in service.supertypes) {
-                val superTypeName = superType.toString()
-                if (superTypeName in resolvers) {
-                    val resolver = resolvers[superTypeName]!!
-                    resolver.solve(service, manager)
-
-                    solved = true
-                    break
-                }
-            }
-            if (!solved) {
-                log.warn(
-                    """${'\n'}
-                    服务启动警告: 未在配置中找到能够处理类型为'$service'的处理器,
-                    所以该类型为无效服务, 不会被载入到系统; 如果要解决这个异常,
-                    请考虑实现xyz.scootaloo.vertlin.boot.resolver.ServiceResolver,
-                    并将实现注入到启动配置中
-                    """.trimIndent()
-                )
+        for ((_, resolver) in resolvers) {
+            resolver.ifNotNull {
+                load(it)
             }
         }
 
-        services.forEach { load(it) }
-        Extension.types(Service::class).forEach { load(it) }
+        load(CrontabResolver, CrontabAdapter::class)
+    }
 
-        manager.publishAllSingletons()
+    private fun loadServices(services: Collection<Pair<KClass<*>, Service?>>) {
+        fun load(type: KClass<*>, service: Service?) {
+            for (superType in type.supertypes) {
+                val superTypeName = superType.toString()
+                if (superTypeName in resolvers) {
+                    val resolver = resolvers[superTypeName]!!
+                    resolver.solve(type, service, manager)
+                    break
+                }
+            }
+        }
+
+        services.forEach { load(it.first, it.second) }
+
         val reducers = resolvers.values.filterIsInstance<ManifestReducer>()
         for (reducer in reducers) {
             manager.reduce(reducer)
         }
 
-        manager.publishAllSingletons()
         manifests.addAll(manager.displayManifests())
-
-        monitor.displayFinishServiceResolve()
     }
 
     private fun startServers(): Future<Vertx> {
