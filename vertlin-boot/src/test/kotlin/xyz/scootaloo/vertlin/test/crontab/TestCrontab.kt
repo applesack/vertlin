@@ -25,13 +25,6 @@ class TestCrontab : BootManifest() {
         delay(100000)
     }
 
-    override fun services(): Collection<KClass<out Service>> {
-        return listOf(
-            TestCrontabService1::class,
-            TestCrontabService2::class
-        )
-    }
-
 }
 
 

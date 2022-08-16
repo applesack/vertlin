@@ -14,12 +14,13 @@ import kotlin.reflect.full.isSubclassOf
  */
 internal object Extensions {
 
-    private const val RES_LOCATION = "META-INF/extensions.txt"
+    private const val EXT_RES_LOCATION = "META-INF/extensions.txt"
+    private const val DEF_CONFIG_LOCATION = "META-INF/default.toml"
 
     fun loadResources(): List<KClass<*>> {
         val loader = loader()
         val classNameSet = HashSet<String>()
-        for (url in loader.getResources(RES_LOCATION)) {
+        for (url in loader.getResources(EXT_RES_LOCATION)) {
             val lines = readLines(url)
             for (line in lines) {
                 val pure = line.trim()
@@ -46,6 +47,16 @@ internal object Extensions {
         return resources
     }
 
+    fun loadDefaultConfigs(): List<String> {
+        val loader = loader()
+        val configSet = LinkedList<String>()
+        for (url in loader.getResources(DEF_CONFIG_LOCATION)) {
+            val config = readAsString(url)
+            configSet.add(config)
+        }
+        return configSet
+    }
+
     private fun loader(): ClassLoader {
         return Thread.currentThread().contextClassLoader
     }
@@ -53,6 +64,13 @@ internal object Extensions {
     private fun readLines(url: URL): List<String> {
         val bufferReader = BufferedReader(InputStreamReader(url.openStream()))
         val result = bufferReader.readLines()
+        bufferReader.close()
+        return result
+    }
+
+    private fun readAsString(url: URL): String {
+        val bufferReader = BufferedReader(InputStreamReader(url.openStream()))
+        val result = bufferReader.readText()
         bufferReader.close()
         return result
     }

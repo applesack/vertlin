@@ -1,6 +1,6 @@
 package xyz.scootaloo.vertlin.boot.internal
 
-import xyz.scootaloo.vertlin.boot.config.ConfigManager
+import xyz.scootaloo.vertlin.boot.config.ConfigCheckerEditor
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
 
 /**
@@ -9,10 +9,14 @@ import xyz.scootaloo.vertlin.boot.config.ConfigProvider
  */
 class DefaultConfigs : ConfigProvider {
 
-    override fun register(manager: ConfigManager) {
-        manager.registerChecker("vertx.workerPoolSize") { it is Int }
-        manager.registerChecker("profiles.prefix") { it is String }
-        manager.registerChecker("profiles.active") { it is String }
+    override fun register(editor: ConfigCheckerEditor) {
+        editor.key("vertx.workerPoolSize", Int::class) {
+            rangeTips("取值为0~50")
+            range { it in 0..50 }
+        }
+
+        editor.key("profiles.prefix", String::class)
+        editor.key("profiles.active", String::class)
     }
 
 }

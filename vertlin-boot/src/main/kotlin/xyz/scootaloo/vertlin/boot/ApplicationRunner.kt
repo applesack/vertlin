@@ -2,10 +2,13 @@ package xyz.scootaloo.vertlin.boot
 
 import io.vertx.core.Future
 import io.vertx.core.Vertx
+import io.vertx.core.eventbus.EventBus
+import io.vertx.core.file.FileSystem
 import io.vertx.core.impl.logging.Logger
 import xyz.scootaloo.vertlin.boot.command.CommandLineArgs
 import xyz.scootaloo.vertlin.boot.config.ConfigProvider
 import xyz.scootaloo.vertlin.boot.config.ConfigServiceResolver
+import xyz.scootaloo.vertlin.boot.config.PropertySources
 import xyz.scootaloo.vertlin.boot.core.X
 import xyz.scootaloo.vertlin.boot.core.ifNotNull
 import xyz.scootaloo.vertlin.boot.core.trans
@@ -38,7 +41,6 @@ import kotlin.reflect.full.isSubclassOf
 class ApplicationRunner(val boot: BootManifest) {
 
     private val log = X.getLogger(this::class)
-    private val loader = this::class.java.classLoader
 
     private val manager = ManifestManagerImpl
 
@@ -98,7 +100,7 @@ class ApplicationRunner(val boot: BootManifest) {
         return true
     }
 
-    private fun loadResources(command: CommandLineArgs) {
+    private fun loadResources(cmd: CommandLineArgs) {
         monitor.displayBeforeServicesResolve()
 
         Container.start()
@@ -106,9 +108,8 @@ class ApplicationRunner(val boot: BootManifest) {
         loadResourcesFromDependencies()
         loadResourcesFromPreset()
 
-        ConfigServiceResolver.load(
-            loader, command, Container.instancesOf(ConfigProvider::class)
-        )
+        val configProviders = Container.instancesOf(ConfigProvider::class).mapNotNull { it.second }
+        PropertySources.loadConfigs(configProviders, cmd)
 
         loadResolvers(Container.instancesOf(ServiceResolver::class))
         loadServices(Container.instancesOf(Service::class))
@@ -200,7 +201,9 @@ class ApplicationRunner(val boot: BootManifest) {
     private fun createVertxInstance(): Vertx {
         // todo 根据配置生成 VertxOptions
         val vertx = Vertx.vertx()
-        Container.registerVertx(vertx)
+        Container.registerSharedSingleton(vertx, Vertx::class)
+        Container.registerSharedSingleton(vertx.eventBus(), EventBus::class)
+        Container.registerSharedSingleton(vertx.fileSystem(), FileSystem::class)
         return vertx
     }
 

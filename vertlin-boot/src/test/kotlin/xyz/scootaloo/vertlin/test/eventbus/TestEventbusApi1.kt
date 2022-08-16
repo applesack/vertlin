@@ -27,10 +27,6 @@ class TestEventbusApi1 : BootManifest() {
         log.info("after call: " + testApi.hello(""))
     }
 
-    override fun services(): Collection<KClass<out Service>> {
-        return listOf(TestApi::class)
-    }
-
 }
 
 @Context("test")

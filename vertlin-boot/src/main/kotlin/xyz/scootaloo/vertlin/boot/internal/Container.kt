@@ -3,7 +3,6 @@ package xyz.scootaloo.vertlin.boot.internal
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.EventBus
 import io.vertx.core.file.FileSystem
-import xyz.scootaloo.vertlin.boot.Holder
 import xyz.scootaloo.vertlin.boot.LazyInit
 import xyz.scootaloo.vertlin.boot.util.TypeUtils
 import java.util.*
@@ -24,8 +23,6 @@ internal object Container {
 
     private val stateLock = ReentrantReadWriteLock()
     private var state = StartupState.CLOSED
-
-    @Volatile private lateinit var vertx: Vertx
 
     private val resources = HashMap<String, KClass<*>>()
     private val singletonMapper = HashMap<String, Any>()
@@ -102,13 +99,6 @@ internal object Container {
 
     fun finish() {
         modifyStartupState(StartupState.FINISHED)
-    }
-
-    fun registerVertx(vertx: Vertx) {
-        this.vertx = vertx
-        registerSharedSingleton(vertx, Vertx::class)
-        registerSharedSingleton(vertx.eventBus(), EventBus::class)
-        registerSharedSingleton(vertx.fileSystem(), FileSystem::class)
     }
 
     fun registerSharedSingleton(obj: Any, type: KClass<*> = obj::class) {

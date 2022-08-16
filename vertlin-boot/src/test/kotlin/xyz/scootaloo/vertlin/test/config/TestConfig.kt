@@ -24,10 +24,6 @@ class TestConfig : BootManifest() {
         println(hello)
     }
 
-    override fun services(): Collection<KClass<out Service>> {
-        return listOf(Hello::class)
-    }
-
 }
 
 @Prefix("hello")
