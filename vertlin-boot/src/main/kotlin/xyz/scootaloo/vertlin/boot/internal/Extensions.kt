@@ -20,7 +20,7 @@ internal object Extensions {
     fun loadResources(): List<KClass<*>> {
         val loader = loader()
         val classNameSet = HashSet<String>()
-        for (url in loader.getResources(EXT_RES_LOCATION)) {
+        for (url in getResources(EXT_RES_LOCATION)) {
             val lines = readLines(url)
             for (line in lines) {
                 val pure = line.trim()
@@ -48,13 +48,16 @@ internal object Extensions {
     }
 
     fun loadDefaultConfigs(): List<String> {
-        val loader = loader()
         val configSet = LinkedList<String>()
-        for (url in loader.getResources(DEF_CONFIG_LOCATION)) {
+        for (url in getResources(DEF_CONFIG_LOCATION)) {
             val config = readAsString(url)
             configSet.add(config)
         }
         return configSet
+    }
+
+    private fun getResources(file: String): Enumeration<URL> {
+        return loader().getResources(file) ?: ClassLoader.getSystemResources(file)
     }
 
     private fun loader(): ClassLoader {

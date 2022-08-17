@@ -1,0 +1,6 @@
+[webdav]
+path = "home"
+cache = 5
+
+[webdav.users]
+test = "123456"
