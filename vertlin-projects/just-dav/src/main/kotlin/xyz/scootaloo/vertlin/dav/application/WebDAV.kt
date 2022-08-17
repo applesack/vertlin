@@ -10,5 +10,6 @@ import xyz.scootaloo.vertlin.boot.config.Prefix
 @Prefix("webdav")
 class WebDAV(
     val path: String,
+    val cache: Int,
     val users: Map<String, String>
 ) : Config

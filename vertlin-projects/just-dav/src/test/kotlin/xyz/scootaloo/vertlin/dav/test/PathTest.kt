@@ -71,4 +71,18 @@ class PathTest : TestDSL {
         // /%E6%A0%91%E8%8E%93%E6%B4%BEPython%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97%20%28%E6%95%B0%E5%AD%97%E5%8C%A0%E4%BA%BA%29_4775076.epub
     }
 
+    @Test
+    fun test2() {
+        parent("/").log()
+        parent("/abc").log()
+        parent("/abc/def").log()
+    }
+
+    private fun parent(path: String): String {
+        val idx = path.lastIndexOf('/')
+        if (idx < 0) return ""
+        if (idx == 0) return "/"
+        return path.substring(0, idx)
+    }
+
 }

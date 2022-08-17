@@ -1,5 +1,0 @@
-[webdav]
-path = "home"
-
-[webdav.users]
-test = "123456"

@@ -10,4 +10,6 @@ internal object Constant {
 
     const val USERNAME = "username"
 
+    val PRESET = Any()
+
 }

@@ -14,8 +14,4 @@ object CUtils {
         map[key] = collection
     }
 
-    fun <K, V> notnullGet(map: Map<K, V>, key: K): V {
-        return map[key]!!
-    }
-
 }

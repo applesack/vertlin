@@ -26,6 +26,12 @@ object DeleteService : FileOperations() {
     suspend fun delete(ctx: RoutingContext) {
         val block = AccessBlock.of(ctx)
 
+        if (block.target == "/") {
+            ctx.response().statusCode = StatusCode.methodNotAllowed
+            ctx.response().end()
+            return
+        }
+
         // 忽略请求头中的 Depth 属性, 任意delete请求的深度都视为infinite; 9.6.1
         val deniedSet = detect(ctx, block, DepthHeader.infinite) ?: return
 
@@ -39,7 +45,11 @@ object DeleteService : FileOperations() {
         val username = ContextUtils.displayCurrentUserName(ctx)
         log.info("删除文件: $username => ${block.target}")
 
-        return if (!fs.props(targetAbsolutePath).await().isDirectory || deniedSet.isEmpty()) {
+        val isTargetDirectory = fs.props(targetAbsolutePath).await().isDirectory
+
+        resetCache(block.target, isTargetDirectory)
+
+        return if (!isTargetDirectory || deniedSet.isEmpty()) {
             buildResponse(ctx, fastDeleteSingleFile(targetAbsolutePath))
         } else {
             buildResponse(ctx, deleteRecursiveWithDeniedSet(targetAbsolutePath, deniedSet))

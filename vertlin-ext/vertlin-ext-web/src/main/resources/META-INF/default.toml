@@ -8,6 +8,6 @@ bodyLimit = 83886080
 [http.ssl]
 enable = false
 path = ""
-
+password = ""
 
 [http.websocket]

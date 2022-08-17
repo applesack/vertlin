@@ -51,6 +51,8 @@ abstract class DualFileOperations : FileOperations() {
         val username = ContextUtils.displayCurrentUserName(ctx)
         log.info("${actionName()}: $username from ${param.source} to ${param.destination}")
 
+        resetCache(param)
+
         val response = ctx.response()
         if (events.isEmpty()) {
             response.statusCode = if (events.state == OperateState.NO_CONTENT) {
@@ -63,6 +65,11 @@ abstract class DualFileOperations : FileOperations() {
         }
 
         ctx.endWithXml(MultiStatus.buildResponses(events.multi))
+    }
+
+    private fun resetCache(diffParam: DiffParam) {
+        resetCache(diffParam.source)
+        resetCache(diffParam.destination)
     }
 
     /**

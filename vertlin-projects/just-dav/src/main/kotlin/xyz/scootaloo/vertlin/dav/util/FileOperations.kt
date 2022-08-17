@@ -10,6 +10,7 @@ import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.domain.IfHeader
 import xyz.scootaloo.vertlin.dav.file.FileInfo
 import xyz.scootaloo.vertlin.dav.lock.LockManager
+import xyz.scootaloo.vertlin.dav.service.PropFindCacheService
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
@@ -57,6 +58,18 @@ abstract class FileOperations {
         val trimB = b.trim('/')
         val result = "$trimA/$trimB"
         return FileInfo.normalize(result)
+    }
+
+    protected fun resetCache(relativePath: String, isDirectory: Boolean = true) {
+        val parent = relativeParent(relativePath)
+        PropFindCacheService.invalidate(parent)
+        PropFindCacheService.invalidate(relativePath, isDirectory)
+    }
+
+    private fun relativeParent(path: String): String {
+        val idx = path.lastIndexOf('/')
+        if (idx <= 0) return "/"
+        return path.substring(0, idx)
     }
 
 }

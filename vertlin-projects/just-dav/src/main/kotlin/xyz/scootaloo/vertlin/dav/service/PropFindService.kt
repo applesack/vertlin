@@ -6,6 +6,7 @@ import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.Namespace
 import org.dom4j.QName
+import xyz.scootaloo.vertlin.dav.constant.Constant
 import xyz.scootaloo.vertlin.dav.constant.StatusCode
 import xyz.scootaloo.vertlin.dav.domain.AccessBlock
 import xyz.scootaloo.vertlin.dav.file.FileInfo
@@ -36,10 +37,32 @@ object PropFindService : FileOperations() {
             return
         }
 
+        tryGetResponseFromCache(ctx, block) ?: return
+
         val xmlResponse = buildResponse(block, deniedSet)
+
+        putResponseToCache(block, xmlResponse)
 
         ctx.response().statusCode = StatusCode.multiStatus
         ctx.endWithXml(xmlResponse)
+    }
+
+    private fun tryGetResponseFromCache(ctx: RoutingContext, block: AccessBlock): Any? {
+        if (block.depth.depth == 1) {
+            val cache = PropFindCacheService.getCache(block.target)
+            if (cache != null) {
+                ctx.response().statusCode = StatusCode.multiStatus
+                ctx.endWithXml(cache)
+                return null
+            }
+        }
+        return Constant.PRESET
+    }
+
+    private fun putResponseToCache(block: AccessBlock, response: String) {
+        if (block.depth.depth == 1) {
+            PropFindCacheService.putCache(block.target, response)
+        }
     }
 
     private suspend fun buildResponse(block: AccessBlock, deniedSet: Set<String>): String {

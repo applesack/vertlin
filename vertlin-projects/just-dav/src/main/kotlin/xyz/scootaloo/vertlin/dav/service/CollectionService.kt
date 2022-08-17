@@ -73,6 +73,8 @@ object CollectionService : FileOperations() {
         val msg = "创建目录: $username => ${block.target}"
         log.info(msg)
 
+        resetCache(block.target, false)
+
         response.statusCode = StatusCode.created
         response.end()
     }

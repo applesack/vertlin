@@ -18,6 +18,14 @@ class HttpServerConfig(
 ) : Config
 
 
+@Prefix("http.ssl")
+class HttpSslConfig(
+    val enable: Boolean,
+    val path: String,
+    val password: String
+) : Config
+
+
 class HttpServerConfigProvider : ConfigProvider {
 
     override fun register(editor: ConfigCheckerEditor) {
@@ -32,6 +40,7 @@ class HttpServerConfigProvider : ConfigProvider {
 
         editor.key("http.ssl.enable", Boolean::class)
         editor.key("http.ssl.path", String::class)
+        editor.key("http.ssl.password", String::class)
     }
 
 }

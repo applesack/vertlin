@@ -1,4 +1,5 @@
 xyz.scootaloo.vertlin.web.HttpServerConfig
+xyz.scootaloo.vertlin.web.HttpSslConfig
 xyz.scootaloo.vertlin.web.HttpServerConfigProvider
 xyz.scootaloo.vertlin.web.resolver.HttpRouterResolver
 xyz.scootaloo.vertlin.web.resolver.WebSocketResolver

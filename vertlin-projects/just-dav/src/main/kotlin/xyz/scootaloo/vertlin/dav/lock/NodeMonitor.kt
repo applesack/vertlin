@@ -1,16 +1,13 @@
 package xyz.scootaloo.vertlin.dav.lock
 
-import xyz.scootaloo.vertlin.boot.util.Nameable
 import xyz.scootaloo.vertlin.dav.domain.DepthHeader
 import xyz.scootaloo.vertlin.dav.domain.TimeoutHeader
-import java.util.*
-import java.util.function.Consumer
 
 /**
  * @author flutterdash@qq.com
  * @since 2022/8/2 上午10:11
  */
-sealed interface NodeMonitor : Nameable, Iterable<NodeMonitor> {
+sealed interface NodeMonitor : Iterable<NodeMonitor> {
 
     val size: Int
 
@@ -28,7 +25,7 @@ sealed interface NodeMonitor : Nameable, Iterable<NodeMonitor> {
 
 }
 
-class PlaceholderMonitor(override val name: String) : NodeMonitor {
+class PlaceholderMonitor(val name: String) : NodeMonitor {
 
     override val size: Int
         get() = TODO("Not yet implemented")
@@ -52,7 +49,7 @@ class PlaceholderMonitor(override val name: String) : NodeMonitor {
 }
 
 class LockMonitor(
-    override val name: String,
+    val name: String,
     val token: String,
     val owner: String,
     val timeout: TimeoutHeader,

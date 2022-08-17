@@ -64,6 +64,8 @@ object UploadService : FileOperations() {
         val msg = "上传文件: $username => ${block.target}"
         log.info(msg)
 
+        resetCache(block.target, false)
+
         response.end()
     }
 

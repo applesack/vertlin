@@ -1,14 +1,17 @@
 package xyz.scootaloo.vertlin.web.resolver
 
 import io.vertx.core.Vertx
+import io.vertx.core.file.FileSystem
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.impl.logging.Logger
+import io.vertx.core.net.PfxOptions
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.kotlin.core.http.httpServerOptionsOf
+import io.vertx.kotlin.core.net.jksOptionsOf
 import io.vertx.kotlin.coroutines.await
 import xyz.scootaloo.vertlin.boot.Service
 import xyz.scootaloo.vertlin.boot.core.X
@@ -17,6 +20,7 @@ import xyz.scootaloo.vertlin.boot.internal.inject
 import xyz.scootaloo.vertlin.boot.resolver.*
 import xyz.scootaloo.vertlin.web.Constant
 import xyz.scootaloo.vertlin.web.HttpServerConfig
+import xyz.scootaloo.vertlin.web.HttpSslConfig
 import xyz.scootaloo.vertlin.web.resolver.HttpRouterResolver.HttpRouterManifest
 import xyz.scootaloo.vertlin.web.resolver.WebSocketResolver.WebSocketManifest
 import kotlin.reflect.KClass
@@ -29,6 +33,7 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
 
     private val log = X.getLogger(this::class)
     private val config by inject(HttpServerConfig::class)
+    private val ssl by inject(HttpSslConfig::class)
 
     override fun solve(type: KClass<*>, service: Service?, publisher: ResourcesPublisher) {
         throw UnsupportedOperationException()
@@ -37,7 +42,7 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
     override fun reduce(manager: ManifestManager) {
         val routers = manager.extractManifests(HttpRouterManifest::class).map { it.component }
         val websocketHandlers = manager.extractManifests(WebSocketManifest::class).map { it.wsHandler }
-        val finalManifest = HttpServerManifest(log, routers, websocketHandlers, config)
+        val finalManifest = HttpServerManifest(log, routers, websocketHandlers, config, ssl)
 
         log.info("Vert.x HttpServer initialized with port(s): ${config.port} (http)")
 
@@ -48,11 +53,13 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
         private val log: Logger,
         private val httpRouters: List<HttpRouterResolver.RouterComponent>,
         private val websocketHandler: List<suspend (ServerWebSocket) -> Unit>,
-        private val config: HttpServerConfig
+        private val config: HttpServerConfig,
+        private val sslConfig: HttpSslConfig,
     ) : ContextServiceManifest {
 
         private val coroutine by inject(CoroutineResource::class)
         private lateinit var server: HttpServer
+        private val fs by inject(FileSystem::class)
 
         override fun name(): String {
             return "http-server"
@@ -73,8 +80,21 @@ class WebServerAssembler : ServiceResolver(UnreachableService::class), ManifestR
             log.info("Vert.x Web started on port(s) ${config.port} (http)")
         }
 
-        private fun httpServerOptions(): HttpServerOptions {
-            return httpServerOptionsOf()
+        private suspend fun httpServerOptions(): HttpServerOptions {
+            val httpServerOptions = httpServerOptionsOf()
+            if (sslConfig.enable) {
+                // https://www.cnblogs.com/SparkMore/p/14067340.html
+                if (!fs.exists(sslConfig.path).await()) {
+                    log.info("ssl配置'${sslConfig.path}'未找到, 所以此配置被禁用")
+                }
+
+                val buffer = fs.readFile(sslConfig.path).await()
+                httpServerOptions.isSsl = true
+                httpServerOptions.keyStoreOptions = jksOptionsOf()
+                    .setPassword(sslConfig.password)
+                    .setValue(buffer)
+            }
+            return httpServerOptions
         }
 
         private fun bindReqRouters(vertx: Vertx): Router {
